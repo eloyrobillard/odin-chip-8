@@ -126,6 +126,23 @@ test_cond_reg_reg :: proc(t: ^testing.T) {
   assert(state.regs[r2] == 0, "V2 should contain 0")
 }
 
+/*6xkk - LD Vx, byte
+
+Vxにkkをセットする。インタプリタはレジスタVxにkkの値をセットする。
+*/
+@(test)
+test_load_reg_byte :: proc(t: ^testing.T) {
+  state := main.State{}
+  reg: u16 = 0
+  data: u16 = 0x8f
+  opcode: u16 = 0x6000 | (reg << 8) | data
+
+  assert(state.regs[reg] == 0, "V0 should contain 0")
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.regs[reg] == 0x8f, "V0 should contain 0x8f")
+}
+
 @(test)
 test_instructions_loading :: proc(t: ^testing.T) {
   state := main.State{}
