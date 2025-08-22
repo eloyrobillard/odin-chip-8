@@ -7,9 +7,11 @@ state := main.State{}
 
 @(test)
 test_address_jump :: proc(t: ^testing.T) {
-  main.execute_opcode(0x1123, &state)
+  addr: u16 = 0x0200
+  opcode: u16 = 0x1000 | addr
+  main.execute_opcode(opcode, &state)
 
-  testing.expect(t, state.pc == 0x0123, "Did not jump to address 0x0123")
+  testing.expect(t, state.pc == addr, "Did not jump to address")
 }
 
 @(test)
