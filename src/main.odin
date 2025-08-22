@@ -30,6 +30,10 @@ execute_opcode :: proc(opcode: u16, state: ^State) {
   fst_nib := opcode & 0xf000 >> 12
 
   switch fst_nib {
+  /* 1NNN - JUMP addr
+  アドレスNNNにジャンプする。
+  インタプリタはプログラムカウンタをNNNにする。
+  */
   case 1:
     addr := opcode & 0x0fff
     state.pc = addr
