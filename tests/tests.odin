@@ -114,7 +114,7 @@ test_cond_reg_reg :: proc(t: ^testing.T) {
 
   pc = state.pc
   state.regs[r1] = 1
-  opcode = 0x5000 | r1 | r2
+  opcode = 0x5000 | (r1 << 8) | (r2 << 4)
 
   assert(state.regs[r1] == 1, "V1 should contain 1")
   assert(state.regs[r2] == 0, "V2 should contain 0")
