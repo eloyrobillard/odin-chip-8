@@ -38,6 +38,31 @@ test_call_addr :: proc(t: ^testing.T) {
   )
 }
 
+/* 3xkk - SE Vx, byte
+  Vx = kkの場合、次の命令をスキップする。インタプリタはレジスタVxとkkを比較し、二つが等しいならプログラムカウンタを2進める。
+  */
+@(test)
+test_cond_reg_byte :: proc(t: ^testing.T) {
+  pc := state.pc
+  reg: u16 = 0
+  same_as_reg: u16 = 0
+  opcode: u16 = 0x3000 | (reg << 8) | same_as_reg
+
+  assert(state.regs[reg] == 0, "V0 should contain 0")
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.pc == pc + 2, "Did not add 2 to program counter")
+
+  diff_from_reg: u16 = 1
+  pc = state.pc
+  opcode = 0x3000 | (reg << 8) | diff_from_reg
+
+  assert(state.regs[reg] == 0, "V0 should contain 0")
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.pc == pc, "Program counter should be unchanged")
+  assert(state.regs[reg] == 0, "V0 should contain 0")
+}
 
 @(test)
 test_instructions_loading :: proc(t: ^testing.T) {
