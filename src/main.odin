@@ -57,5 +57,16 @@ execute_opcode :: proc(opcode: u16, state: ^State) {
     cmp := u8(opcode & 0x00ff)
 
     if reg == cmp do state.pc += 2
+
+  /*4xkk - SNE Vx, byte
+
+  Vx != kkの場合、次の命令をスキップする。インタプリタはレジスタVxとkkを比較し、二つが異なるならプログラムカウンタを2進める。
+  */
+  case 4:
+    reg_n := opcode & 0x0f00 >> 8
+    reg := state.regs[reg_n]
+    cmp := u8(opcode & 0x00ff)
+
+    if reg != cmp do state.pc += 2
   }
 }
