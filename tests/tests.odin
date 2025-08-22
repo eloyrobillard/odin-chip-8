@@ -3,7 +3,6 @@ package tests
 import main "../src"
 import "core:testing"
 
-state := main.State{}
 
 /* 1NNN - JUMP addr
   アドレスNNNにジャンプする。
@@ -11,6 +10,7 @@ state := main.State{}
   */
 @(test)
 test_address_jump :: proc(t: ^testing.T) {
+  state := main.State{}
   addr: u16 = 0x0200
   opcode: u16 = 0x1000 | addr
   main.execute_opcode(opcode, &state)
@@ -23,6 +23,7 @@ test_address_jump :: proc(t: ^testing.T) {
   */
 @(test)
 test_call_addr :: proc(t: ^testing.T) {
+  state := main.State{}
   addr: u16 = 0x0200
   opcode: u16 = 0x2000 | addr
   pc := state.pc
@@ -43,6 +44,7 @@ test_call_addr :: proc(t: ^testing.T) {
   */
 @(test)
 test_cond_reg_byte :: proc(t: ^testing.T) {
+  state := main.State{}
   pc := state.pc
   reg: u16 = 0
   same_as_reg: u16 = 0
@@ -70,6 +72,7 @@ Vx != kkの場合、次の命令をスキップする。インタプリタはレ
 */
 @(test)
 test_ncond_reg_byte :: proc(t: ^testing.T) {
+  state := main.State{}
   pc := state.pc
   reg: u16 = 0
   same_as_reg: u16 = 0
@@ -93,6 +96,7 @@ test_ncond_reg_byte :: proc(t: ^testing.T) {
 
 @(test)
 test_instructions_loading :: proc(t: ^testing.T) {
+  state := main.State{}
   binary := []u8{1, 2}
 
   main.load_instructions(binary, &state)
