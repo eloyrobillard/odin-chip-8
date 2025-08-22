@@ -99,7 +99,7 @@ test_instructions_loading :: proc(t: ^testing.T) {
   state := main.State{}
   binary := []u8{1, 2}
 
-  main.load_instructions(binary, &state)
+  main.load_instructions(&binary, &state)
 
   testing.expect(
     t,

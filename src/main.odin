@@ -16,7 +16,7 @@ main :: proc() {
   // binary := #load(path, []u8)
 }
 
-load_instructions :: proc(binary: []u8, state: ^State) {
+load_instructions :: proc(binary: ^[]u8, state: ^State) {
   // load in Big Endian order starting at address 0x200
   start := 0x200
   offset := 0
