@@ -37,5 +37,15 @@ execute_opcode :: proc(opcode: u16, state: ^State) {
   case 1:
     addr := opcode & 0x0fff
     state.pc = addr
+
+  /* 2NNN - CALL addr
+  アドレスNNNのサブルーチンをCallする。インタプリタはスタックポインタをインクリメントし、それから現在のプログラムカウンタをスタックの一番上に置く。さらにプログラムカウンタにNNNをセットする。
+  */
+  case 2:
+    state.sp += 1
+    state.stack[state.sp] = state.pc
+
+    addr := opcode & 0x0fff
+    state.pc = addr
   }
 }
