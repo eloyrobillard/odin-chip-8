@@ -5,6 +5,10 @@ import "core:testing"
 
 state := main.State{}
 
+/* 1NNN - JUMP addr
+  アドレスNNNにジャンプする。
+  インタプリタはプログラムカウンタをNNNにする。
+  */
 @(test)
 test_address_jump :: proc(t: ^testing.T) {
   addr: u16 = 0x0200
