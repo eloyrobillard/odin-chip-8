@@ -70,6 +70,19 @@ execute_opcode :: proc(opcode: u16, state: ^State) {
     if reg != cmp do state.pc += 2
 
 
+  /* 5xy0 - SE Vx, Vy
+
+  Vx = Vyの場合、次の命令をスキップする。インタプリタはレジスタVxとVyを比較し、二つが等しいならプログラムカウンタを2進める。
+  */
+  case 5:
+    vx_n := opcode & 0x0f00 >> 8
+    vy_n := opcode & 0x00f0 >> 4
+
+    vx := state.regs[vx_n]
+    vy := state.regs[vy_n]
+
+    if vx == vy do state.pc += 2
+
   /*6xkk - LD Vx, byte
 
   Vxにkkをセットする。インタプリタはレジスタVxにkkの値をセットする。
