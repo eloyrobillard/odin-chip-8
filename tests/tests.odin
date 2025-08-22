@@ -94,6 +94,38 @@ test_ncond_reg_byte :: proc(t: ^testing.T) {
   assert(state.regs[reg] == 0, "V0 should contain 0")
 }
 
+/* 5xy0 - SE Vx, Vy
+
+Vx = Vyの場合、次の命令をスキップする。インタプリタはレジスタVxとVyを比較し、二つが等しいならプログラムカウンタを2進める。
+*/
+@(test)
+test_cond_reg_reg :: proc(t: ^testing.T) {
+  state := main.State{}
+  pc := state.pc
+  r1: u16 = 1
+  r2: u16 = 2
+  opcode := 0x5000 | (r1 << 8) | (r2 << 4)
+
+  assert(state.regs[r1] == 0, "V1 should contain 0")
+  assert(state.regs[r2] == 0, "V2 should contain 0")
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.pc == pc + 2, "Did not add 2 to program counter")
+
+  pc = state.pc
+  state.regs[r1] = 1
+  opcode = 0x5000 | r1 | r2
+
+  assert(state.regs[r1] == 1, "V1 should contain 1")
+  assert(state.regs[r2] == 0, "V2 should contain 0")
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.pc == pc, "Should not update program counter")
+
+  assert(state.regs[r1] == 1, "V1 should contain 1")
+  assert(state.regs[r2] == 0, "V2 should contain 0")
+}
+
 @(test)
 test_instructions_loading :: proc(t: ^testing.T) {
   state := main.State{}
