@@ -91,5 +91,14 @@ execute_opcode :: proc(opcode: u16, state: ^State) {
     reg_n := opcode & 0x0f00 >> 8
     data := u8(opcode & 0x00ff)
     state.regs[reg_n] = data
+
+  /*7xkk - ADD Vx, byte
+
+  VxにVx + kkをセットする。インタプリタはレジスタVxにkkの値を加算する。
+  */
+  case 7:
+    reg_n := opcode & 0x0f00 >> 8
+    data := u8(opcode & 0x00ff)
+    state.regs[reg_n] += data
   }
 }

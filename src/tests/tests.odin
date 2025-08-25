@@ -143,6 +143,23 @@ test_load_reg_byte :: proc(t: ^testing.T) {
   testing.expect(t, state.regs[reg] == 0x8f, "V0 should contain 0x8f")
 }
 
+/*7xkk - ADD Vx, byte
+
+VxにVx + kkをセットする。インタプリタはレジスタVxにkkの値を加算する。
+*/
+@(test)
+test_add_reg_byte :: proc(t: ^testing.T) {
+  state := main.State{}
+  reg: u16 = 0
+  data: u16 = 1
+  opcode: u16 = 0x7000 | (reg << 8) | data
+
+  state.regs[reg] = 1
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.regs[reg] == 2, "Register should contain 2")
+}
+
 @(test)
 test_instructions_loading :: proc(t: ^testing.T) {
   state := main.State{}
