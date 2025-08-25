@@ -8,6 +8,7 @@ State :: struct {
   regs:  [16]u8,
   stack: [16]u16,
   ram:   [4096]u8,
+  dsp:   [32][64]u8,
 }
 
 main :: proc() {
@@ -30,6 +31,15 @@ execute_opcode :: proc(opcode: u16, state: ^State) {
   fst_nib := opcode & 0xf000 >> 12
 
   switch fst_nib {
+  /* 00E0 - CLS
+
+  ディプレイをクリアする。
+  */
+  case 0:
+    if opcode & 0x0f00 > 0 {} else if opcode & 0x000f > 0 {} else {
+      state.dsp = [32][64]u8{}
+    }
+
   /* 1NNN - JUMP addr
   アドレスNNNにジャンプする。
   インタプリタはプログラムカウンタをNNNにする。
