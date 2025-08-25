@@ -45,6 +45,11 @@ test_address_jump :: proc(t: ^testing.T) {
   state := main.State{}
   addr: u16 = 0x0200
   opcode: u16 = 0x1000 | addr
+
+  assert(
+    state.pc != addr,
+    "Program counter should not be equal to jump address at this point",
+  )
   main.execute_opcode(opcode, &state)
 
   testing.expect(t, state.pc == addr, "Did not jump to address")
