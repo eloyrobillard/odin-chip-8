@@ -1,6 +1,6 @@
 package tests
 
-import main "../src"
+import main ".."
 import "core:testing"
 
 
