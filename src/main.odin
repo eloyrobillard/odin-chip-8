@@ -58,7 +58,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) {
 
     if reg == cmp do state.pc += 2
 
-  /*4xkk - SNE Vx, byte
+  /* 4xkk - SNE Vx, byte
 
   Vx != kkの場合、次の命令をスキップする。インタプリタはレジスタVxとkkを比較し、二つが異なるならプログラムカウンタを2進める。
   */
@@ -83,7 +83,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) {
 
     if vx == vy do state.pc += 2
 
-  /*6xkk - LD Vx, byte
+  /* 6xkk - LD Vx, byte
 
   Vxにkkをセットする。インタプリタはレジスタVxにkkの値をセットする。
   */
@@ -92,7 +92,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) {
     data := u8(opcode & 0x00ff)
     state.regs[reg_n] = data
 
-  /*7xkk - ADD Vx, byte
+  /* 7xkk - ADD Vx, byte
 
   VxにVx + kkをセットする。インタプリタはレジスタVxにkkの値を加算する。
   */
