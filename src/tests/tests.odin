@@ -197,6 +197,25 @@ test_add_reg_byte :: proc(t: ^testing.T) {
   testing.expect(t, state.regs[reg] == 2, "Register should contain 2")
 }
 
+/* Annn - LD I, addr
+
+Iにnnnをセットする。
+*/
+@(test)
+test_load_i_addr :: proc(t: ^testing.T) {
+  state := main.State{}
+  data: u16 = 0x0333
+  opcode := 0xa000 | data
+
+  assert(
+    state.i != data,
+    "I register should have a different value than the test data",
+  )
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.i == data, "I register should contain the test data")
+}
+
 @(test)
 test_instructions_loading :: proc(t: ^testing.T) {
   state := main.State{}

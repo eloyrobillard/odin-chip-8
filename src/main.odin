@@ -3,8 +3,9 @@ package main
 import "core:fmt"
 
 State :: struct {
-  pc:    u16, // 現在の実行アドレスを格納
+  i:     u16,
   sp:    u8, // Stack Pointer, スタックの先頭のインデックスを表す
+  pc:    u16, // 現在の実行アドレスを格納
   regs:  [16]u8,
   stack: [16]u16,
   ram:   [4096]u8,
@@ -110,5 +111,13 @@ execute_opcode :: proc(opcode: u16, state: ^State) {
     reg_n := opcode & 0x0f00 >> 8
     data := u8(opcode & 0x00ff)
     state.regs[reg_n] += data
+
+  /* Annn - LD I, addr
+
+  Iにnnnをセットする。
+  */
+  case 0xA:
+    data := opcode & 0x0fff
+    state.i = data
   }
 }
