@@ -9,7 +9,7 @@ State :: struct {
   regs:  [16]u8,
   stack: [16]u16,
   ram:   [4096]u8,
-  dsp:   [32][64]u8,
+  dsp:   [32]u64,
 }
 
 main :: proc() {
@@ -38,7 +38,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) {
   */
   case 0:
     if opcode & 0x0f00 > 0 {} else if opcode & 0x000f > 0 {} else {
-      state.dsp = [32][64]u8{}
+      state.dsp = [32]u64{}
     }
 
   /* 1NNN - JUMP addr

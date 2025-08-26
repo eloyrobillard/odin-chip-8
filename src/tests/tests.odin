@@ -3,12 +3,10 @@ package tests
 import main ".."
 import "core:testing"
 
-is_display_clear :: proc(dsp: ^[32][64]u8) -> bool {
+is_display_clear :: proc(dsp: ^[32]u64) -> bool {
   for row in dsp {
-    for byte in row {
-      if byte > 0 {
-        return false
-      }
+    if row > 0 {
+      return false
     }
   }
 
@@ -24,7 +22,7 @@ test_clear_screen :: proc(t: ^testing.T) {
   state := main.State{}
   assert(is_display_clear(&state.dsp) == true, "Display should be clear")
 
-  state.dsp[0][0] = 1
+  state.dsp[0] = 1
   assert(is_display_clear(&state.dsp) == false, "Display should be set")
 
   main.execute_opcode(0x00e0, &state)
