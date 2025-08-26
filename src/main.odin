@@ -119,5 +119,29 @@ execute_opcode :: proc(opcode: u16, state: ^State) {
   case 0xA:
     data := opcode & 0x0fff
     state.i = data
+
+  /* Dxyn - DRW Vx, Vy, nibble
+
+  アドレスIのnバイトのスプライトを(Vx, Vy)に描画する。Vfにはcollision(後述)をセットする。
+
+  アドレスIのnバイトのスプライトを読み出し、スプライトとして(Vx, Vy)に描画する。スプライトは画面にXORする。このとき、消されたピクセルが一つでもある場合はVfに1、それ以外の場合は0をセットする。スプライトの一部が画面からはみ出る場合は、逆方向に折り返す。
+  */
+  case 0xD:
+    x := opcode & 0x0f00 >> 8
+    y := opcode & 0x00f0 >> 4
+    n := opcode & 0x000f
+
+    vx := state.regs[x]
+    vy := u16(state.regs[y])
+
+    for i in 0 ..< n {
+      byte := state.ram[state.i + i]
+      byte_shifted := u64(byte) << vx
+
+      // 衝突が起こったら、Vfに１をセット
+      if state.dsp[vy + i] & byte_shifted > 0 do state.regs[0xf] = 1
+
+      state.dsp[vy + i] = byte_shifted
+    }
   }
 }

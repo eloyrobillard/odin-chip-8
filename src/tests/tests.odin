@@ -214,6 +214,83 @@ test_load_i_addr :: proc(t: ^testing.T) {
   testing.expect(t, state.i == data, "I register should contain the test data")
 }
 
+/* Dxyn - DRW Vx, Vy, nibble
+
+アドレスIのnバイトのスプライトを(Vx, Vy)に描画する。Vfにはcollision(後述)をセットする。
+
+アドレスIのnバイトのスプライトを読み出し、スプライトとして(Vx, Vy)に描画する。スプライトは画面にXORする。このとき、消されたピクセルが一つでもある場合はVfに1、それ以外の場合は0をセットする。スプライトの一部が画面からはみ出る場合は、逆方向に折り返す。
+*/
+@(test)
+test_draw_nbytes_at_xy :: proc(t: ^testing.T) {
+  state := main.State{}
+
+  // まずはスプライトを準備する
+  sprite_one := [5]u8{0x20, 0x60, 0x20, 0x20, 0x70}
+  state.ram[0] = sprite_one[0]
+  state.ram[1] = sprite_one[1]
+  state.ram[2] = sprite_one[2]
+  state.ram[3] = sprite_one[3]
+  state.ram[4] = sprite_one[4]
+
+  start_x: u8 = 24
+  start_y: u8 = 13
+  vx: u16 = 1
+  vy: u16 = 2
+  state.regs[vx] = start_x
+  state.regs[vy] = start_y
+  n: u16 = 5
+  opcode: u16 = 0xd000 | (vx << 8) | (vy << 4) | n
+
+  state.i = 0
+  main.execute_opcode(opcode, &state)
+
+  for i in 0 ..< n {
+    testing.expect(
+      t,
+      u8((state.dsp[start_y + u8(i)] & (0xff << start_x)) >> start_x) ==
+      sprite_one[i],
+      "Display should contain sprite at X and Y",
+    )
+  }
+  testing.expect(t, state.regs[0xf] == 0, "Collision should NOT be set in Vf")
+}
+
+@(test)
+test_draw_nbytes_at_xy_with_collision :: proc(t: ^testing.T) {
+  state := main.State{}
+
+  // まずはスプライトを準備する
+  sprite_one := [5]u8{0x20, 0x60, 0x20, 0x20, 0x70}
+  state.ram[0] = sprite_one[0]
+  state.ram[1] = sprite_one[1]
+  state.ram[2] = sprite_one[2]
+  state.ram[3] = sprite_one[3]
+  state.ram[4] = sprite_one[4]
+
+  start_x: u8 = 24
+  start_y: u8 = 13
+  vx: u16 = 1
+  vy: u16 = 2
+  state.regs[vx] = start_x
+  state.regs[vy] = start_y
+  n: u16 = 5
+  opcode: u16 = 0xd000 | (vx << 8) | (vy << 4) | n
+
+  // ディスプレイに予め衝突するデータを用意
+  state.dsp[start_y] = 0x20 << start_x
+
+  state.i = 0
+  state.regs[0xf] = 0
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.regs[0xf] == 1, "Collision should be set in Vf")
+}
+
+@(test)
+test_draw_nbytes_at_xy_with_wrapping :: proc(t: ^testing.T) {
+  // TODO: wrappingの意味と結果を確認
+}
+
 @(test)
 test_instructions_loading :: proc(t: ^testing.T) {
   state := main.State{}
