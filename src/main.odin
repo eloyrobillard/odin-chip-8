@@ -24,9 +24,10 @@ main :: proc() {
   num_instr := load_instructions_in_ram(&binary, &state, start)
 
   // ディスプレイを起動
+  multiplier: i32 = 30
   WIDTH: i32 = 64
   HEIGHT: i32 = 32
-  rl.InitWindow(WIDTH, HEIGHT, "Chip 8 Logo Test")
+  rl.InitWindow(WIDTH * multiplier, HEIGHT * multiplier, "Chip 8 Logo Test")
   rl.SetTargetFPS(60)
 
   i := 0
@@ -39,7 +40,7 @@ main :: proc() {
 
     execute_opcode(opcode, &state)
 
-    draw_display(&state.dsp, WIDTH, HEIGHT)
+    draw_display(&state.dsp, WIDTH, HEIGHT, multiplier)
 
     rl.EndDrawing()
 
@@ -49,14 +50,19 @@ main :: proc() {
   rl.CloseWindow()
 }
 
-draw_display :: proc(display: ^[32]u64, WIDTH: i32, HEIGHT: i32) {
+draw_display :: proc(
+  display: ^[32]u64,
+  WIDTH: i32,
+  HEIGHT: i32,
+  multiplier: i32,
+) {
   for y in 0 ..< HEIGHT {
     for x in 0 ..< WIDTH {
       row := display[y]
       set := (row & (1 << u32(x))) > 0
 
-      if set do rl.DrawPixel(x, y, rl.WHITE)
-      else do rl.DrawPixel(x, y, rl.BLACK)
+      if set do rl.DrawRectangle(x * multiplier, y * multiplier, multiplier, multiplier, rl.WHITE)
+      else do rl.DrawRectangle(x * multiplier, y * multiplier, multiplier, multiplier, rl.BLACK)
     }
   }
 }
