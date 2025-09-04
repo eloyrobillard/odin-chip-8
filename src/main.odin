@@ -14,14 +14,16 @@ State :: struct {
 }
 
 main :: proc() {
-  state := State{}
 
   // プログラムを取得
   binary := #load("../assets/1-chip8-logo.ch8", []u16)
 
   // オペコードを解読し、実行する
-  start := 0x200
-  num_instr := load_instructions_in_ram(&binary, &state, start)
+  instrs_start_addr: u16 = 0x200
+  state := State {
+    pc = instrs_start_addr,
+  }
+  num_instr := load_instructions_in_ram(&binary, &state, instrs_start_addr)
 
   // ディスプレイを起動
   multiplier: i32 = 30
@@ -30,21 +32,20 @@ main :: proc() {
   rl.InitWindow(WIDTH * multiplier, HEIGHT * multiplier, "Chip 8 Logo Test")
   rl.SetTargetFPS(60)
 
-  i := 0
-  for !rl.WindowShouldClose() && i < num_instr {
+  for !rl.WindowShouldClose() {
     rl.BeginDrawing()
 
-    fst_byte := u16(state.ram[start + i])
-    snd_byte := u16(state.ram[start + i + 1])
+    fst_byte := u16(state.ram[state.pc])
+    snd_byte := u16(state.ram[state.pc + 1])
     opcode: u16 = fst_byte << 8 + snd_byte
 
-    execute_opcode(opcode, &state)
+    jumped := execute_opcode(opcode, &state)
 
     draw_display(&state.dsp, WIDTH, HEIGHT, multiplier)
 
     rl.EndDrawing()
 
-    i += 2
+    if !jumped do state.pc += 2
   }
 
   rl.CloseWindow()
@@ -70,22 +71,23 @@ draw_display :: proc(
 load_instructions_in_ram :: proc(
   binary: ^[]u16,
   state: ^State,
-  start: int,
-) -> int {
+  start_addr: u16,
+) -> u16 {
   // load in Big Endian mode starting at address 0x200
-  offset := 0
+  offset: u16 = 0
   for word in binary {
     fst_byte := u8(word & 0xff)
     snd_byte := u8((word & 0xff00) >> 8)
-    state.ram[start + offset] = fst_byte
-    state.ram[start + offset + 1] = snd_byte
+    state.ram[start_addr + offset] = fst_byte
+    state.ram[start_addr + offset + 1] = snd_byte
     offset += 2
   }
 
   return offset
 }
 
-execute_opcode :: proc(opcode: u16, state: ^State) {
+execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
+  jumped := false
   fst_nib := opcode & 0xf000 >> 12
 
   switch fst_nib {
@@ -105,6 +107,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) {
   case 1:
     addr := opcode & 0x0fff
     state.pc = addr
+    jumped = true
 
   /* 2NNN - CALL addr
   アドレスNNNのサブルーチンをCallする。インタプリタはスタックポインタをインクリメントし、それから現在のプログラムカウンタをスタックの一番上に置く。さらにプログラムカウンタにNNNをセットする。
@@ -201,4 +204,6 @@ execute_opcode :: proc(opcode: u16, state: ^State) {
       state.dsp[vy + i] = byte_shifted
     }
   }
+
+  return jumped
 }
