@@ -17,17 +17,34 @@ main :: proc() {
 
   // プログラムを取得
   // オペコードを解読し、実行する
-  // binary := #load(path, []u8)
+  start := 0x200
+  len := load_instructions_in_ram(&binary, &state, start)
+
+  for i := 0; i < len; i += 2 {
+    fst_byte := u16(state.ram[start + i])
+    snd_byte := u16(state.ram[start + i + 1])
+    opcode: u16 = fst_byte << 8 + snd_byte
+
+    execute_opcode(opcode, &state)
+  }
 }
 
-load_instructions :: proc(binary: ^[]u8, state: ^State) {
-  // load in Big Endian order starting at address 0x200
-  start := 0x200
+load_instructions_in_ram :: proc(
+  binary: ^[]u16,
+  state: ^State,
+  start: int,
+) -> int {
+  // load in Big Endian mode starting at address 0x200
   offset := 0
-  for byte in binary {
-    state.ram[start + offset] = byte
-    offset += 1
+  for word in binary {
+    fst_byte := u8(word & 0xff)
+    snd_byte := u8((word & 0xff00) >> 8)
+    state.ram[start + offset] = fst_byte
+    state.ram[start + offset + 1] = snd_byte
+    offset += 2
   }
+
+  return offset
 }
 
 execute_opcode :: proc(opcode: u16, state: ^State) {
