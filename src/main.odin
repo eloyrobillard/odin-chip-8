@@ -17,6 +17,8 @@ main :: proc() {
   state := State{}
 
   // プログラムを取得
+  binary := #load("../assets/1-chip8-logo.ch8", []u16)
+
   // オペコードを解読し、実行する
   start := 0x200
   num_instr := load_instructions_in_ram(&binary, &state, start)
