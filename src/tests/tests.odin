@@ -294,19 +294,21 @@ test_draw_nbytes_at_xy_with_wrapping :: proc(t: ^testing.T) {
 @(test)
 test_instructions_loading :: proc(t: ^testing.T) {
   state := main.State{}
-  binary := []u8{1, 2}
+  // binaryはリトルエンディアンになっている
+  binary := []u16{0x0102}
+  start := 0x200
 
-  main.load_instructions_in_ram(&binary, &state)
+  main.load_instructions_in_ram(&binary, &state, start)
 
   testing.expect(
     t,
-    state.ram[0x200] == 1,
-    "Did not load first byte at start address",
+    state.ram[0x200] == 2,
+    "Did not load second byte at first address",
   )
 
   testing.expect(
     t,
-    state.ram[0x201] == 2,
-    "Did not load second byte at address 0x201",
+    state.ram[0x201] == 1,
+    "Did not load first byte at second address",
   )
 }
