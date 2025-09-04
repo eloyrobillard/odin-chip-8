@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import rl "vendor:raylib"
 
 State :: struct {
   i:     u16,
@@ -18,14 +19,43 @@ main :: proc() {
   // プログラムを取得
   // オペコードを解読し、実行する
   start := 0x200
-  len := load_instructions_in_ram(&binary, &state, start)
+  num_instr := load_instructions_in_ram(&binary, &state, start)
 
-  for i := 0; i < len; i += 2 {
+  // ディスプレイを起動
+  WIDTH: i32 = 64
+  HEIGHT: i32 = 32
+  rl.InitWindow(WIDTH, HEIGHT, "Chip 8 Logo Test")
+  rl.SetTargetFPS(60)
+
+  i := 0
+  for !rl.WindowShouldClose() && i < num_instr {
+    rl.BeginDrawing()
+
     fst_byte := u16(state.ram[start + i])
     snd_byte := u16(state.ram[start + i + 1])
     opcode: u16 = fst_byte << 8 + snd_byte
 
     execute_opcode(opcode, &state)
+
+    draw_display(&state.dsp, WIDTH, HEIGHT)
+
+    rl.EndDrawing()
+
+    i += 2
+  }
+
+  rl.CloseWindow()
+}
+
+draw_display :: proc(display: ^[32]u64, WIDTH: i32, HEIGHT: i32) {
+  for y in 0 ..< HEIGHT {
+    for x in 0 ..< WIDTH {
+      row := display[y]
+      set := (row & (1 << u32(x))) > 0
+
+      if set do rl.DrawPixel(x, y, rl.WHITE)
+      else do rl.DrawPixel(x, y, rl.BLACK)
+    }
   }
 }
 
