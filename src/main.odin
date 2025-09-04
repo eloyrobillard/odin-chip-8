@@ -13,6 +13,8 @@ State :: struct {
 }
 
 main :: proc() {
+  state := State{}
+
   // プログラムを取得
   // オペコードを解読し、実行する
   // binary := #load(path, []u8)
