@@ -51,19 +51,14 @@ main :: proc() {
   rl.CloseWindow()
 }
 
-draw_display :: proc(
-  display: ^[32]u64,
-  WIDTH: i32,
-  HEIGHT: i32,
-  multiplier: i32,
-) {
+draw_display :: proc(display: ^[32]u64, WIDTH: i32, HEIGHT: i32, scale: i32) {
   for y in 0 ..< HEIGHT {
     for x in 0 ..< WIDTH {
       row := display[y]
-      set := (row & (1 << u32(x))) > 0
+      x_from_left := WIDTH - x - 1
+      set := (row & (1 << u32(x_from_left))) > 0
 
-      if set do rl.DrawRectangle(x * multiplier, y * multiplier, multiplier, multiplier, rl.WHITE)
-      else do rl.DrawRectangle(x * multiplier, y * multiplier, multiplier, multiplier, rl.BLACK)
+      if set do rl.DrawRectangle(x * scale, y * scale, scale, scale, rl.WHITE)
     }
   }
 }
@@ -187,21 +182,22 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   アドレスIのnバイトのスプライトを読み出し、スプライトとして(Vx, Vy)に描画する。スプライトは画面にXORする。このとき、消されたピクセルが一つでもある場合はVfに1、それ以外の場合は0をセットする。スプライトの一部が画面からはみ出る場合は、逆方向に折り返す。
   */
   case 0xD:
-    x := opcode & 0x0f00 >> 8
-    y := opcode & 0x00f0 >> 4
-    n := opcode & 0x000f
+    x := (opcode & 0x0f00) >> 8
+    y := (opcode & 0x00f0) >> 4
+    n := (opcode & 0x000f)
 
     vx := state.regs[x]
     vy := u16(state.regs[y])
 
     for i in 0 ..< n {
       byte := state.ram[state.i + i]
-      byte_shifted := u64(byte) << vx
+      vx_from_left := state.dsp_w - i32(vx) - 1
+      shifted_byte := u64(byte) << u32(vx_from_left)
 
       // 衝突が起こったら、Vfに１をセット
-      if state.dsp[vy + i] & byte_shifted > 0 do state.regs[0xf] = 1
+      if (state.dsp[vy + i] & shifted_byte) > 0 do state.regs[0xf] = 1
 
-      state.dsp[vy + i] = byte_shifted
+      state.dsp[vy + i] ~= shifted_byte
     }
   }
 
