@@ -194,8 +194,9 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
 
     for i in 0 ..< n {
       byte := state.ram[state.i + i]
-      vx_from_left := state.dsp_w - i32(vx) - 1
-      shifted_byte := u64(byte) << u32(vx_from_left)
+      width_of_byte: i32 = size_of(byte) * 8
+      byte_to_leftmost := (u64(byte) << u32(state.dsp_w - width_of_byte))
+      shifted_byte := byte_to_leftmost >> u32(vx)
 
       // 衝突が起こったら、Vfに１をセット
       if (state.dsp[vy + i] & shifted_byte) > 0 do state.regs[0xf] = 1
