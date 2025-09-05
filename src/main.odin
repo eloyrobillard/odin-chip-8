@@ -11,6 +11,8 @@ State :: struct {
   stack: [16]u16,
   ram:   [4096]u8,
   dsp:   [32]u64,
+  dsp_w: i32,
+  dsp_h: i32,
 }
 
 main :: proc() {
@@ -21,15 +23,16 @@ main :: proc() {
   // オペコードを解読し、実行する
   instrs_start_addr: u16 = 0x200
   state := State {
-    pc = instrs_start_addr,
+    pc    = instrs_start_addr,
+    dsp_w = 64,
+    dsp_h = 32,
   }
+
   num_instr := load_instructions_in_ram(&binary, &state, instrs_start_addr)
 
   // ディスプレイを起動
-  multiplier: i32 = 30
-  WIDTH: i32 = 64
-  HEIGHT: i32 = 32
-  rl.InitWindow(WIDTH * multiplier, HEIGHT * multiplier, "Chip 8 Logo Test")
+  scale: i32 = 30
+  rl.InitWindow(state.dsp_w * scale, state.dsp_h * scale, "Chip 8 Logo Test")
   rl.SetTargetFPS(60)
 
   for !rl.WindowShouldClose() {
@@ -41,7 +44,7 @@ main :: proc() {
 
     jumped := execute_opcode(opcode, &state)
 
-    draw_display(&state.dsp, WIDTH, HEIGHT, multiplier)
+    draw_display(&state.dsp, state.dsp_w, state.dsp_h, scale)
 
     rl.EndDrawing()
 
