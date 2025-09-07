@@ -308,7 +308,7 @@ test_instructions_loading :: proc(t: ^testing.T) {
   state := main.State{}
   // binaryはリトルエンディアンになっている
   binary := []u16{0x0102}
-  start := 0x200
+  start: u16 = 0x200
 
   main.load_instructions_in_ram(&binary, &state, start)
 
