@@ -222,7 +222,10 @@ test_load_i_addr :: proc(t: ^testing.T) {
 */
 @(test)
 test_draw_nbytes_at_xy :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.State {
+    dsp_w = 64,
+    dsp_h = 32,
+  }
 
   // まずはスプライトを準備する
   sprite_one := [5]u8{0x20, 0x60, 0x20, 0x20, 0x70}
@@ -244,10 +247,14 @@ test_draw_nbytes_at_xy :: proc(t: ^testing.T) {
   state.i = 0
   main.execute_opcode(opcode, &state)
 
+  x_from_left := u8(state.dsp_w) - start_x - 8
+
   for i in 0 ..< n {
     testing.expect(
       t,
-      u8((state.dsp[start_y + u8(i)] & (0xff << start_x)) >> start_x) ==
+      u8(
+        (state.dsp[start_y + u8(i)] & (0xff << x_from_left)) >> x_from_left,
+      ) ==
       sprite_one[i],
       "Display should contain sprite at X and Y",
     )
@@ -257,7 +264,10 @@ test_draw_nbytes_at_xy :: proc(t: ^testing.T) {
 
 @(test)
 test_draw_nbytes_at_xy_with_collision :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.State {
+    dsp_w = 64,
+    dsp_h = 32,
+  }
 
   // まずはスプライトを準備する
   sprite_one := [5]u8{0x20, 0x60, 0x20, 0x20, 0x70}
@@ -276,8 +286,10 @@ test_draw_nbytes_at_xy_with_collision :: proc(t: ^testing.T) {
   n: u16 = 5
   opcode: u16 = 0xd000 | (vx << 8) | (vy << 4) | n
 
+  x_from_left := u8(state.dsp_w) - start_x - 8
+
   // ディスプレイに予め衝突するデータを用意
-  state.dsp[start_y] = 0x20 << start_x
+  state.dsp[start_y] = 0x20 << x_from_left
 
   state.i = 0
   state.regs[0xf] = 0

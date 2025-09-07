@@ -189,7 +189,10 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     y := (opcode & 0x00f0) >> 4
     n := (opcode & 0x000f)
 
+    assert(i32(state.regs[x]) <= state.dsp_w)
     vx := state.regs[x]
+
+    assert(i32(state.regs[y]) <= state.dsp_h)
     vy := u16(state.regs[y])
 
     for i in 0 ..< n {
