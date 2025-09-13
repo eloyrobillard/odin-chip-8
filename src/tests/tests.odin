@@ -326,7 +326,7 @@ test_draw_nbytes_at_xy_with_wrapping :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_set_vx_to_vy :: proc(t: ^testing.T) {
+test_load_vx_vy :: proc(t: ^testing.T) {
   state := main.State{}
   state.regs[4] = 7
   state.regs[6] = 9
@@ -342,4 +342,194 @@ test_set_vx_to_vy :: proc(t: ^testing.T) {
     state.regs[4] == state.regs[6] && state.regs[4] == 9,
     "Vx should equal Vy",
   )
+}
+
+@(test)
+test_or_vx_vy :: proc(t: ^testing.T) {
+  state := main.State{}
+  state.regs[4] = 7
+  state.regs[6] = 9
+
+  vx: u16 = 4
+  vy: u16 = 6
+  opcode := 0x8001 | vx << 8 | vy << 4
+
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.regs[4] == 15, "Vx should equal Vx | Vy")
+}
+
+@(test)
+test_and_vx_vy :: proc(t: ^testing.T) {
+  state := main.State{}
+  state.regs[4] = 7
+  state.regs[6] = 9
+
+  vx: u16 = 4
+  vy: u16 = 6
+  opcode := 0x8002 | vx << 8 | vy << 4
+
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.regs[4] == 1, "Vx should equal Vx & Vy")
+}
+
+@(test)
+test_xor_vx_vy :: proc(t: ^testing.T) {
+  state := main.State{}
+  state.regs[4] = 7
+  state.regs[6] = 9
+
+  vx: u16 = 4
+  vy: u16 = 6
+  opcode := 0x8003 | vx << 8 | vy << 4
+
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.regs[4] == 14, "Vx should equal Vx ^ Vy")
+}
+
+@(test)
+test_add_vx_vy :: proc(t: ^testing.T) {
+  state := main.State{}
+
+  vx: u16 = 4
+  vy: u16 = 6
+  opcode := 0x8004 | vx << 8 | vy << 4
+
+  state.regs[4] = 128
+  state.regs[6] = 255
+
+  assert(state.regs[0xf] == 0)
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(
+    t,
+    state.regs[4] == 127,
+    "Vx should equal Vx + Vy with byte overflow",
+  )
+  testing.expect(t, state.regs[0xf] == 1)
+
+  state.regs[4] = 7
+  state.regs[6] = 9
+
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.regs[4] == 16)
+  testing.expect(t, state.regs[0xf] == 0)
+}
+
+@(test)
+test_sub_vx_vy :: proc(t: ^testing.T) {
+  state := main.State{}
+  vx: u16 = 4
+  vy: u16 = 6
+  opcode := 0x8005 | vx << 8 | vy << 4
+
+  state.regs[4] = 9
+  state.regs[6] = 7
+
+  assert(state.regs[0xf] == 0)
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.regs[4] == 2, "Vx should equal Vx - Vy")
+  testing.expect(t, state.regs[0xf] == 1, "Flag should be set when Vx > Vy")
+
+  state.regs[4] = 7
+  state.regs[6] = 9
+
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(
+    t,
+    state.regs[4] == 254,
+    "Vx should equal Vx - Vy with byte overflow",
+  )
+  testing.expect(
+    t,
+    state.regs[0xf] == 0,
+    "Flag should NOT be set when Vy >= Vx",
+  )
+}
+
+@(test)
+test_shr_vx :: proc(t: ^testing.T) {
+  state := main.State{}
+
+  vx: u16 = 4
+  vy: u16 = 4
+  opcode := 0x8006 | vx << 8 | vy << 4
+
+  state.regs[4] = 5
+
+  assert(state.regs[0xf] == 0)
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.regs[vx] == 2)
+  testing.expect(t, state.regs[0xf] == 1)
+
+  state.regs[4] = 4
+
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.regs[vx] == 2)
+  testing.expect(t, state.regs[0xf] == 0)
+}
+
+@(test)
+test_subn_vx_vy :: proc(t: ^testing.T) {
+  state := main.State{}
+
+  vx: u16 = 4
+  vy: u16 = 6
+  opcode := 0x8007 | vx << 8 | vy << 4
+
+  state.regs[4] = 7
+  state.regs[6] = 9
+
+  assert(state.regs[0xf] == 0)
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.regs[4] == 2, "Vx should equal Vy - Vx")
+  testing.expect(t, state.regs[0xf] == 1, "Flag should be set when Vy > Vx")
+
+  state.regs[4] = 9
+  state.regs[6] = 7
+
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(
+    t,
+    state.regs[4] == 254,
+    "Vx should equal Vy - Vx with byte overflow",
+  )
+  testing.expect(
+    t,
+    state.regs[0xf] == 0,
+    "Flag should NOT be set when Vx >= Vy",
+  )
+}
+
+@(test)
+test_shl_vx :: proc(t: ^testing.T) {
+  state := main.State{}
+
+  vx: u16 = 4
+  vy: u16 = 4
+  opcode := 0x800e | vx << 8 | vy << 4
+
+  state.regs[4] = 0x81
+
+  assert(state.regs[0xf] == 0)
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.regs[vx] == 2)
+  testing.expect(t, state.regs[0xf] == 1)
+
+  state.regs[4] = 4
+
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.regs[vx] == 8)
+  testing.expect(t, state.regs[0xf] == 0)
 }
