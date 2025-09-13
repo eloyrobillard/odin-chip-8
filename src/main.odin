@@ -214,6 +214,17 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
 
       state.dsp[vy + i] ~= shifted_byte
     }
+
+  case 0x8:
+    fst_byte := opcode & 0xf
+
+    switch fst_byte {
+    case 0x0:
+      vx := (opcode & 0x0f00) >> 8
+      vy := (opcode & 0x00f0) >> 4
+
+      state.regs[vx] = state.regs[vy]
+    }
   }
 
   return jumped

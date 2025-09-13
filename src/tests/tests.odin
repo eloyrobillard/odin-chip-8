@@ -304,23 +304,20 @@ test_draw_nbytes_at_xy_with_wrapping :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_instructions_loading :: proc(t: ^testing.T) {
+test_set_vx_to_vy :: proc(t: ^testing.T) {
   state := main.State{}
-  // binaryはリトルエンディアンになっている
-  binary := []u16{0x0102}
-  start: u16 = 0x200
+  state.regs[4] = 7
+  state.regs[6] = 9
 
-  main.load_instructions_in_ram(&binary, &state, start)
+  vx: u16 = 4
+  vy: u16 = 6
+  opcode := 0x8000 | vx << 8 | vy << 4
 
-  testing.expect(
-    t,
-    state.ram[0x200] == 2,
-    "Did not load second byte at first address",
-  )
+  main.execute_opcode(opcode, &state)
 
   testing.expect(
     t,
-    state.ram[0x201] == 1,
-    "Did not load first byte at second address",
+    state.regs[4] == state.regs[6] && state.regs[4] == 9,
+    "Vx should equal Vy",
   )
 }
