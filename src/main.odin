@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:os"
 import rl "vendor:raylib"
 
 State :: struct {
@@ -16,9 +17,16 @@ State :: struct {
 }
 
 main :: proc() {
-
   // プログラムを取得
-  binary := #load("../assets/1-chip8-logo.ch8", []u16)
+  assert(len(os.args) > 1, "Please pass the name of the file to run")
+
+  filename := os.args[1]
+
+  data, ok := os.read_entire_file(filename)
+  if !ok do fmt.println("Could not read file")
+  defer delete(data)
+
+  binary := transmute([]u16)(data)
 
   // オペコードを解読し、実行する
   instrs_start_addr: u16 = 0x200
