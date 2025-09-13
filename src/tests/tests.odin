@@ -13,6 +13,28 @@ is_display_clear :: proc(dsp: ^[32]u64) -> bool {
   return true
 }
 
+@(test)
+test_instructions_loading :: proc(t: ^testing.T) {
+  state := main.State{}
+  // binaryはリトルエンディアンになっている
+  binary := []u16{0x0102}
+  start: u16 = 0x200
+
+  main.load_instructions_in_ram(&binary, &state, start)
+
+  testing.expect(
+    t,
+    state.ram[0x200] == 2,
+    "Did not load second byte at first address",
+  )
+
+  testing.expect(
+    t,
+    state.ram[0x201] == 1,
+    "Did not load first byte at second address",
+  )
+}
+
 /* 00E0 - CLS
 
 ディプレイをクリアする。
