@@ -102,8 +102,14 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   ディプレイをクリアする。
   */
   case 0:
-    if opcode & 0x0f00 > 0 {} else if opcode & 0x000f > 0 {} else {
+    low_byte := opcode & 0x00ff
+    switch low_byte {
+    case 0xE0:
       state.dsp = [32]u64{}
+
+    case:
+      fmt.printfln("Opcode not implemented: %4x", opcode)
+
     }
 
   /* 1NNN - JUMP addr
