@@ -91,7 +91,7 @@ test_call_addr :: proc(t: ^testing.T) {
   testing.expect(t, state.sp == sp + 1, "Did not increment stack pointer")
   testing.expect(
     t,
-    state.stack[state.sp] == pc,
+    state.stack[state.sp] == pc + 2, // Call直後の命令のアドレス
     "Old program counter not at top of stack",
   )
 }
