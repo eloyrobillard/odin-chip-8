@@ -289,6 +289,16 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     fst_byte := opcode & 0xff
 
     switch fst_byte {
+    /*Fx55 - LD [I], Vx
+    V0からVxまでの値をIから始まるアドレスにセットする。
+    */
+    case 0x55:
+      x := (opcode & 0x0f00) >> 8
+
+      for i in 0 ..= x {
+        state.ram[state.I + i] = state.regs[i]
+      }
+
     /* Fx65 - LD Vx, [I]
     アドレスIから読んだ値をV0からVxにセットする。
     */
