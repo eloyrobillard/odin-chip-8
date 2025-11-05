@@ -232,13 +232,13 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     }
 
   case 0x8:
-    fst_byte := opcode & 0xf
+    fst_nibble := opcode & 0xf
     vx := (opcode & 0x0f00) >> 8
     vy := (opcode & 0x00f0) >> 4
     old_vx := state.regs[vx]
     old_vy := state.regs[vy]
 
-    switch fst_byte {
+    switch fst_nibble {
     case 0x0:
       state.regs[vx] = state.regs[vy]
     case 0x1:
@@ -282,6 +282,21 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
         state.regs[0xf] = 1
       } else {
         state.regs[0xf] = 0
+      }
+    }
+
+  case 0xF:
+    fst_byte := opcode & 0xff
+
+    switch fst_byte {
+    /* Fx65 - LD Vx, [I]
+    アドレスIから読んだ値をV0からVxにセットする。
+    */
+    case 0x65:
+      x := (opcode & 0x0f00) >> 8
+
+      for i in 0 ..= x {
+        state.regs[i] = state.ram[state.I + i]
       }
     }
   }

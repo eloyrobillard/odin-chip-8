@@ -548,3 +548,25 @@ test_return :: proc(t: ^testing.T) {
   testing.expect(t, state.sp == 9)
   testing.expect(t, state.pc == 20)
 }
+
+// Fx65
+@(test)
+test_ld_vx_I :: proc(t: ^testing.T) {
+  state := main.State{}
+  for i in 0 ..= 15 {
+    assert(state.regs[i] == 0)
+  }
+
+  opcode: u16 = 0xF365
+  state.ram[state.I] = 0
+  state.ram[state.I + 1] = 1
+  state.ram[state.I + 2] = 2
+  state.ram[state.I + 3] = 3
+
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.regs[0] == 0)
+  testing.expect(t, state.regs[1] == 1)
+  testing.expect(t, state.regs[2] == 2)
+  testing.expect(t, state.regs[3] == 3)
+}
