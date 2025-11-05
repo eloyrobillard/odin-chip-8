@@ -228,12 +228,12 @@ test_load_i_addr :: proc(t: ^testing.T) {
   opcode := 0xa000 | data
 
   assert(
-    state.i != data,
+    state.I != data,
     "I register should have a different value than the test data",
   )
   main.execute_opcode(opcode, &state)
 
-  testing.expect(t, state.i == data, "I register should contain the test data")
+  testing.expect(t, state.I == data, "I register should contain the test data")
 }
 
 /* Dxyn - DRW Vx, Vy, nibble
@@ -266,7 +266,7 @@ test_draw_nbytes_at_xy :: proc(t: ^testing.T) {
   n: u16 = 5
   opcode: u16 = 0xd000 | (vx << 8) | (vy << 4) | n
 
-  state.i = 0
+  state.I = 0
   main.execute_opcode(opcode, &state)
 
   x_from_left := u8(state.dsp_w) - start_x - 8
@@ -313,7 +313,7 @@ test_draw_nbytes_at_xy_with_collision :: proc(t: ^testing.T) {
   // ディスプレイに予め衝突するデータを用意
   state.dsp[start_y] = 0x20 << x_from_left
 
-  state.i = 0
+  state.I = 0
   state.regs[0xf] = 0
   main.execute_opcode(opcode, &state)
 

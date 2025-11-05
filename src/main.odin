@@ -5,7 +5,7 @@ import "core:os"
 import rl "vendor:raylib"
 
 State :: struct {
-  i:     u16,
+  I:     u16,
   sp:    u8, // Stack Pointer, スタックの先頭のインデックスを表す
   pc:    u16, // 現在の実行アドレスを格納
   regs:  [16]u8,
@@ -202,7 +202,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   */
   case 0xA:
     data := opcode & 0x0fff
-    state.i = data
+    state.I = data
 
   /* Dxyn - DRW Vx, Vy, nibble
   アドレスIのnバイトのスプライトを(Vx, Vy)に描画する。Vfにはcollision(後述)をセットする。
@@ -220,7 +220,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     vy := u16(state.regs[y])
 
     for i in 0 ..< n {
-      byte := state.ram[state.i + i]
+      byte := state.ram[state.I + i]
       width_of_byte: i32 = size_of(byte) * 8
       byte_to_leftmost := (u64(byte) << u32(state.dsp_w - width_of_byte))
       shifted_byte := byte_to_leftmost >> u32(vx)
