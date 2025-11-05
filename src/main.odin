@@ -97,15 +97,25 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   fst_nib := opcode & 0xf000 >> 12
 
   switch fst_nib {
-  /* 00E0 - CLS
-
-  ディプレイをクリアする。
-  */
   case 0:
     low_byte := opcode & 0x00ff
+
     switch low_byte {
+    /* 00E0 - CLS
+    ディプレイをクリアする。
+    */
     case 0xE0:
       state.dsp = [32]u64{}
+
+    /* 00EE - RET
+    サブルーチンから戻る。プログラムカウンタにスタックの一番上のアドレスをセットし、スタックポインタから1を引く。
+    */
+    case 0xEE:
+      state.pc = state.stack[state.sp]
+      state.sp -= 1
+
+      jumped = true
+
 
     case:
       fmt.printfln("Opcode not implemented: %4x", opcode)
@@ -126,10 +136,13 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   */
   case 2:
     state.sp += 1
-    state.stack[state.sp] = state.pc
+    // 次の命令のアドレスをスタックにプッシュ
+    state.stack[state.sp] = state.pc + 2
 
     addr := opcode & 0x0fff
     state.pc = addr
+
+    jumped = true
 
   /* 3xkk - SE Vx, byte
   Vx = kkの場合、次の命令をスキップする。インタプリタはレジスタVxとkkを比較し、二つが等しいならプログラムカウンタを2進める。
@@ -142,7 +155,6 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     if reg == cmp do state.pc += 2
 
   /* 4xkk - SNE Vx, byte
-
   Vx != kkの場合、次の命令をスキップする。インタプリタはレジスタVxとkkを比較し、二つが異なるならプログラムカウンタを2進める。
   */
   case 4:
@@ -193,9 +205,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     state.i = data
 
   /* Dxyn - DRW Vx, Vy, nibble
-
   アドレスIのnバイトのスプライトを(Vx, Vy)に描画する。Vfにはcollision(後述)をセットする。
-
   アドレスIのnバイトのスプライトを読み出し、スプライトとして(Vx, Vy)に描画する。スプライトは画面にXORする。このとき、消されたピクセルが一つでもある場合はVfに1、それ以外の場合は0をセットする。スプライトの一部が画面からはみ出る場合は、逆方向に折り返す。
   */
   case 0xD:

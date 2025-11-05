@@ -533,3 +533,18 @@ test_shl_vx :: proc(t: ^testing.T) {
   testing.expect(t, state.regs[vx] == 8)
   testing.expect(t, state.regs[0xf] == 0)
 }
+
+@(test)
+test_return :: proc(t: ^testing.T) {
+  state := main.State{}
+
+  opcode: u16 = 0x00ee
+
+  state.sp = 10
+  state.stack[state.sp] = 20
+
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.sp == 9)
+  testing.expect(t, state.pc == 20)
+}
