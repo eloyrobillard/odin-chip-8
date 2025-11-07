@@ -571,6 +571,19 @@ test_ld_I_vx :: proc(t: ^testing.T) {
   testing.expect(t, state.ram[state.I + 3] == 3)
 }
 
+//Fx1E
+@(test)
+test_set_I_to_I_plus_vx :: proc(t: ^testing.T) {
+  state := main.State{}
+
+  opcode: u16 = 0xF01e
+  state.regs[0] = 8
+
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.I == 8)
+}
+
 // Fx33
 @(test)
 test_ld_bcd_from_vx :: proc(t: ^testing.T) {
