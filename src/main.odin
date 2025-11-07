@@ -289,6 +289,20 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     fst_byte := opcode & 0xff
 
     switch fst_byte {
+    /*Fx33 - LD B, Vx
+    アドレスI, I+1、I+2にVxのBCDをセットする。
+    アドレスIにVxの下位3桁目の値をセットする。I+1には下位2桁目の値をセットし、I+2には下位1桁目の値をセットする。
+    */
+    case 0x33:
+      x := (opcode & 0x0f00) >> 8
+      val := state.regs[x]
+
+      state.ram[state.I + 2] = val % 10
+      val /= 10
+      state.ram[state.I + 1] = val % 10
+      val /= 10
+      state.ram[state.I] = val % 10
+
     /*Fx55 - LD [I], Vx
     V0からVxまでの値をIから始まるアドレスにセットする。
     */

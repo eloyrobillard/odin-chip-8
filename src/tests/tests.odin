@@ -571,6 +571,32 @@ test_ld_I_vx :: proc(t: ^testing.T) {
   testing.expect(t, state.ram[state.I + 3] == 3)
 }
 
+// Fx33
+@(test)
+test_ld_bcd_from_vx :: proc(t: ^testing.T) {
+  state := main.State{}
+  for i in 0 ..= 2 {
+    assert(state.ram[state.I + u16(i)] == 0)
+  }
+
+  opcode: u16 = 0xF033
+  state.regs[0] = 123
+
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.ram[state.I] == 1)
+  testing.expect(t, state.ram[state.I + 1] == 2)
+  testing.expect(t, state.ram[state.I + 2] == 3)
+
+  state.regs[0] = 0
+
+  main.execute_opcode(opcode, &state)
+
+  testing.expect(t, state.ram[state.I] == 0)
+  testing.expect(t, state.ram[state.I + 1] == 0)
+  testing.expect(t, state.ram[state.I + 2] == 0)
+}
+
 // Fx65
 @(test)
 test_ld_vx_I :: proc(t: ^testing.T) {
