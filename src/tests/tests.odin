@@ -336,7 +336,7 @@ test_draw_nbytes_at_xy_with_x_wrapping :: proc(t: ^testing.T) {
   state.ram[3] = sprite_one[3]
   state.ram[4] = sprite_one[4]
 
-  start_x: u8 = u8(state.dsp_w - 4)
+  start_x: u8 = u8(state.dsp_w - 3)
   start_y: u8 = 13
   vx: u16 = 1
   vy: u16 = 2
@@ -347,21 +347,69 @@ test_draw_nbytes_at_xy_with_x_wrapping :: proc(t: ^testing.T) {
 
   x_from_left := u8(state.dsp_w) - start_x - 8
 
-  // ディスプレイに予め衝突するデータを用意
-  state.dsp[start_y] = 0x20 << x_from_left
-
   state.I = 0
   state.regs[0xf] = 0
   main.execute_opcode(opcode, &state)
 
   testing.expect(
     t,
-    state.dsp[start_y] & 0xf0000000 >> 28 == 0xf,
+    state.dsp[start_y] >> 56 == 0xf8,
     fmt.tprintf(
-      fmt.tprintf("Got %c%d%c", '%', state.dsp_w, 'b'),
+      fmt.tprintf(
+        "Got %c%d%c\tExpected 0xF8 on the most significant byte",
+        '%',
+        state.dsp_w / 4,
+        'X',
+      ),
       state.dsp[start_y],
     ),
   )
+}
+
+@(test)
+test_draw_nbytes_at_xy_with_y_wrapping :: proc(t: ^testing.T) {
+  state := main.State {
+    dsp_w = 64,
+    dsp_h = 32,
+  }
+
+  // まずはスプライトを準備する
+  sprite_one := [5]u8{0xff, 0xff, 0xff, 0x20, 0xff}
+  state.ram[0] = sprite_one[0]
+  state.ram[1] = sprite_one[1]
+  state.ram[2] = sprite_one[2]
+  state.ram[3] = sprite_one[3]
+  state.ram[4] = sprite_one[4]
+
+  start_x: u8 = u8(state.dsp_w - 8)
+  start_y: u8 = u8(state.dsp_h - 3)
+  vx: u16 = 1
+  vy: u16 = 2
+  state.regs[vx] = start_x
+  state.regs[vy] = start_y
+  n: u16 = 5
+  opcode: u16 = 0xd000 | (vx << 8) | (vy << 4) | n
+
+  x_from_left := u8(state.dsp_w) - start_x - 8
+
+  state.I = 0
+  state.regs[0xf] = 0
+  main.execute_opcode(opcode, &state)
+
+  for i in 0 ..= 4 {
+    y := i32(start_y + u8(i)) % state.dsp_h
+    row := u8(state.dsp[y])
+    testing.expect(
+      t,
+      row == sprite_one[i],
+      fmt.tprintf(
+        "y: %d\tReceived: %2X\tExpected: %2X",
+        y,
+        row,
+        sprite_one[i],
+      ),
+    )
+  }
 }
 
 @(test)

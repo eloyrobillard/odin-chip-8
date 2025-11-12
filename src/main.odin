@@ -214,21 +214,33 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     n := (opcode & 0x000f)
 
     assert(i32(state.regs[x]) <= state.dsp_w)
-    vx := state.regs[x]
+    start_x := state.regs[x]
 
     assert(i32(state.regs[y]) <= state.dsp_h)
-    vy := u16(state.regs[y])
+    start_y := u16(state.regs[y])
 
     for i in 0 ..< n {
       byte := state.ram[state.I + i]
-      width_of_byte: i32 = size_of(byte) * 8
-      byte_to_leftmost := (u64(byte) << u32(state.dsp_w - width_of_byte))
-      shifted_byte := byte_to_leftmost >> u32(vx)
+      bits_in_byte: i32 = 8
+      byte_from_right := u32(state.dsp_w - bits_in_byte)
+      byte_to_leftmost := u64(byte) << byte_from_right
+      shifted_byte := byte_to_leftmost >> u32(start_x)
+
+      if i32(start_x) > i32(byte_from_right) {
+        // 横方向に折り返す
+        num_bits_not_wrapped := u32(state.dsp_w - i32(start_x))
+        shifted_byte |=
+          (u64(byte) & (0xff >> num_bits_not_wrapped)) <<
+          u32(state.dsp_w - (8 - i32(num_bits_not_wrapped)))
+      }
+
+      // 縦方向に折返す
+      row := u16(i32(start_y + i) % state.dsp_h)
 
       // 衝突が起こったら、Vfに１をセット
-      if (state.dsp[vy + i] & shifted_byte) > 0 do state.regs[0xf] = 1
+      if (state.dsp[row] & shifted_byte) > 0 do state.regs[0xf] = 1
 
-      state.dsp[vy + i] ~= shifted_byte
+      state.dsp[row] ~= shifted_byte
     }
 
   case 0x8:
