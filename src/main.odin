@@ -36,6 +36,9 @@ main :: proc() {
     dsp_h = 32,
   }
 
+  // HACK: キーボードテスト用
+  state.ram[0x1ff] = 1
+
   num_instr := load_instructions_in_ram(&binary, &state, instrs_start_addr)
 
   // ディスプレイを起動
@@ -243,6 +246,37 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
       state.dsp[row] ~= shifted_byte
     }
 
+  case 0xE:
+    fst_byte := opcode & 0xff
+
+    switch fst_byte {
+    /* Ex9E - SKP Vx
+    Vxが押された場合、次の命令をスキップする。
+    キーボードををチェックし、Vxの値のキーが押されていればプログラムカウンタを2インクリメントする。
+    */
+    case 0x9e:
+      x := opcode & 0x0f00 >> 8
+      key := state.regs[x]
+      key = key < 65 ? key + 48 : key + 65
+
+      if rl.IsKeyDown(rl.KeyboardKey(key)) {
+        state.pc += 2
+      }
+
+    /* ExA1 - SKNP Vx
+    Vxが押されてない場合、次の命令をスキップする。
+    キーボードををチェックし、Vxの値のキーが押されていなければプログラムカウンタを2インクリメントする。
+    */
+    case 0xa1:
+      x := opcode & 0x0f00 >> 8
+      key := state.regs[x]
+      key = key < 65 ? key + 48 : key + 65
+
+      if rl.IsKeyDown(rl.KeyboardKey(key)) {
+        state.pc += 2
+      }
+    }
+
   case 0x8:
     fst_nibble := opcode & 0xf
     vx := (opcode & 0x0f00) >> 8
@@ -301,7 +335,24 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     fst_byte := opcode & 0xff
 
     switch fst_byte {
-    /*Fx1E - ADD I, Vx
+    /* Fx0A - LD Vx, K
+    押されたキーをVxにセットする。
+    キーが入力されるまで全ての実行をストップする。キーが押されるとその値をVxにセットする。
+    */
+    case 0x0a:
+      key := rl.GetKeyPressed()
+
+      if key == rl.KeyboardKey.KEY_NULL {
+        // キーが押されていない限り、この命令を繰り返す
+        state.pc -= 2
+      } else {
+        x := opcode & 0x0f00 >> 8
+        state.regs[x] = u8(int(key))
+        fmt.println("key pressed: ", key)
+      }
+
+
+    /* Fx1E - ADD I, Vx
     IにI + Vxをセットする
     */
     case 0x1e:
