@@ -199,8 +199,61 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     data := u8(opcode & 0x00ff)
     state.regs[reg_n] += data
 
-  /* Annn - LD I, addr
+  case 0x8:
+    fst_nibble := opcode & 0xf
+    vx := (opcode & 0x0f00) >> 8
+    vy := (opcode & 0x00f0) >> 4
+    old_vx := state.regs[vx]
+    old_vy := state.regs[vy]
 
+    switch fst_nibble {
+    case 0x0:
+      state.regs[vx] = state.regs[vy]
+    case 0x1:
+      state.regs[vx] |= state.regs[vy]
+    case 0x2:
+      state.regs[vx] &= state.regs[vy]
+    case 0x3:
+      state.regs[vx] ~= state.regs[vy]
+    case 0x4:
+      state.regs[vx] += state.regs[vy]
+      if state.regs[vx] < state.regs[vy] {
+        state.regs[0xf] = 1
+      } else {
+        state.regs[0xf] = 0
+      }
+    case 0x5:
+      state.regs[vx] -= state.regs[vy]
+      if old_vx > old_vy {
+        state.regs[0xf] = 1
+      } else {
+        state.regs[0xf] = 0
+      }
+    case 0x6:
+      state.regs[vx] >>= 1
+      if old_vx & 1 == 1 {
+        state.regs[0xf] = 1
+      } else {
+        state.regs[0xf] = 0
+      }
+    case 0x7:
+      old_vy := state.regs[vy]
+      state.regs[vx] = state.regs[vy] - state.regs[vx]
+      if old_vy > old_vx {
+        state.regs[0xf] = 1
+      } else {
+        state.regs[0xf] = 0
+      }
+    case 0xE:
+      state.regs[vx] <<= 1
+      if old_vx & 0x80 > 0 {
+        state.regs[0xf] = 1
+      } else {
+        state.regs[0xf] = 0
+      }
+    }
+
+  /* Annn - LD I, addr
   Iにnnnをセットする。
   */
   case 0xA:
@@ -257,7 +310,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     case 0x9e:
       x := opcode & 0x0f00 >> 8
       key := state.regs[x]
-      key = key < 65 ? key + 48 : key + 65
+      key = key < 10 ? key + 48 : key + 55
 
       if rl.IsKeyDown(rl.KeyboardKey(key)) {
         state.pc += 2
@@ -270,64 +323,10 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     case 0xa1:
       x := opcode & 0x0f00 >> 8
       key := state.regs[x]
-      key = key < 65 ? key + 48 : key + 65
+      key = key < 10 ? key + 48 : key + 55
 
-      if rl.IsKeyDown(rl.KeyboardKey(key)) {
+      if !rl.IsKeyDown(rl.KeyboardKey(key)) {
         state.pc += 2
-      }
-    }
-
-  case 0x8:
-    fst_nibble := opcode & 0xf
-    vx := (opcode & 0x0f00) >> 8
-    vy := (opcode & 0x00f0) >> 4
-    old_vx := state.regs[vx]
-    old_vy := state.regs[vy]
-
-    switch fst_nibble {
-    case 0x0:
-      state.regs[vx] = state.regs[vy]
-    case 0x1:
-      state.regs[vx] |= state.regs[vy]
-    case 0x2:
-      state.regs[vx] &= state.regs[vy]
-    case 0x3:
-      state.regs[vx] ~= state.regs[vy]
-    case 0x4:
-      state.regs[vx] += state.regs[vy]
-      if state.regs[vx] < state.regs[vy] {
-        state.regs[0xf] = 1
-      } else {
-        state.regs[0xf] = 0
-      }
-    case 0x5:
-      state.regs[vx] -= state.regs[vy]
-      if old_vx > old_vy {
-        state.regs[0xf] = 1
-      } else {
-        state.regs[0xf] = 0
-      }
-    case 0x6:
-      state.regs[vx] >>= 1
-      if old_vx & 1 == 1 {
-        state.regs[0xf] = 1
-      } else {
-        state.regs[0xf] = 0
-      }
-    case 0x7:
-      old_vy := state.regs[vy]
-      state.regs[vx] = state.regs[vy] - state.regs[vx]
-      if old_vy > old_vx {
-        state.regs[0xf] = 1
-      } else {
-        state.regs[0xf] = 0
-      }
-    case 0xE:
-      state.regs[vx] <<= 1
-      if old_vx & 0x80 > 0 {
-        state.regs[0xf] = 1
-      } else {
-        state.regs[0xf] = 0
       }
     }
 
@@ -344,11 +343,10 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
 
       if key == rl.KeyboardKey.KEY_NULL {
         // キーが押されていない限り、この命令を繰り返す
-        state.pc -= 2
+        jumped = true
       } else {
         x := opcode & 0x0f00 >> 8
         state.regs[x] = u8(int(key))
-        fmt.println("key pressed: ", key)
       }
 
 
