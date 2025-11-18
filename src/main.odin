@@ -199,7 +199,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     data := u8(opcode & 0x00ff)
     state.regs[reg_n] += data
 
-  case 0x8:
+  case 8:
     fst_nibble := opcode & 0xf
     vx := (opcode & 0x0f00) >> 8
     vy := (opcode & 0x00f0) >> 4
@@ -251,6 +251,20 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
       } else {
         state.regs[0xf] = 0
       }
+    }
+
+  /* 9xy0 - SNE Vx, Vy
+  Vx != Vyの場合、次の命令をスキップする。つまり、プログラムカウンタを2インクリメントする。
+  */
+  case 9:
+    x := 0x0f00 >> 8
+    y := 0xf0 >> 4
+
+    vx := state.regs[x]
+    vy := state.regs[y]
+
+    if (vx != vy) {
+      state.pc += 2
     }
 
   /* Annn - LD I, addr
