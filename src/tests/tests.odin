@@ -46,7 +46,11 @@ test_clear_screen :: proc(t: ^testing.T) {
   assert(is_display_clear(&state.dsp) == true, "Display should be clear")
 
   state.dsp[0] = 1
-  assert(is_display_clear(&state.dsp) == false, "Display should be set")
+  testing.expect(
+    t,
+    is_display_clear(&state.dsp) == false,
+    "Display should be set",
+  )
 
   main.execute_opcode(0x00e0, &state)
 
