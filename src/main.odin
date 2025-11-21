@@ -36,15 +36,12 @@ main :: proc() {
     dsp_h = 32,
   }
 
-  // HACK: キーボードテスト用
-  state.ram[0x1ff] = 1
-
   num_instr := load_instructions_in_ram(&binary, &state, instrs_start_addr)
 
   // ディスプレイを起動
   scale: i32 = 30
-  rl.InitWindow(state.dsp_w * scale, state.dsp_h * scale, "Chip 8 Logo Test")
-  rl.SetTargetFPS(60)
+  rl.InitWindow(state.dsp_w * scale, state.dsp_h * scale, "Chip 8 Test")
+  rl.SetTargetFPS(144)
 
   for !rl.WindowShouldClose() {
     rl.BeginDrawing()
