@@ -66,6 +66,8 @@ main :: proc() {
 }
 
 draw_display :: proc(display: ^[32]u64, WIDTH: i32, HEIGHT: i32, scale: i32) {
+  rl.ClearBackground(rl.BLACK)
+
   for y in 0 ..< HEIGHT {
     for x in 0 ..< WIDTH {
       row := display[y]
