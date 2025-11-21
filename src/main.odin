@@ -150,7 +150,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   Vx = kkの場合、次の命令をスキップする。インタプリタはレジスタVxとkkを比較し、二つが等しいならプログラムカウンタを2進める。
   */
   case 3:
-    reg_n := opcode & 0x0f00 >> 8
+    reg_n := (opcode & 0x0f00) >> 8
     reg := state.regs[reg_n]
     cmp := u8(opcode & 0x00ff)
 
@@ -160,7 +160,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   Vx != kkの場合、次の命令をスキップする。インタプリタはレジスタVxとkkを比較し、二つが異なるならプログラムカウンタを2進める。
   */
   case 4:
-    reg_n := opcode & 0x0f00 >> 8
+    reg_n := (opcode & 0x0f00) >> 8
     reg := state.regs[reg_n]
     cmp := u8(opcode & 0x00ff)
 
@@ -172,8 +172,8 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   Vx = Vyの場合、次の命令をスキップする。インタプリタはレジスタVxとVyを比較し、二つが等しいならプログラムカウンタを2進める。
   */
   case 5:
-    vx_n := opcode & 0x0f00 >> 8
-    vy_n := opcode & 0x00f0 >> 4
+    vx_n := (opcode & 0x0f00) >> 8
+    vy_n := (opcode & 0x00f0) >> 4
 
     vx := state.regs[vx_n]
     vy := state.regs[vy_n]
@@ -184,8 +184,8 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
 
   Vxにkkをセットする。インタプリタはレジスタVxにkkの値をセットする。
   */
-  case 6:
-    reg_n := opcode & 0x0f00 >> 8
+  case 0x6:
+    reg_n := (opcode & 0x0f00) >> 8
     data := u8(opcode & 0x00ff)
     state.regs[reg_n] = data
 
@@ -194,7 +194,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   VxにVx + kkをセットする。インタプリタはレジスタVxにkkの値を加算する。
   */
   case 7:
-    reg_n := opcode & 0x0f00 >> 8
+    reg_n := (opcode & 0x0f00) >> 8
     data := u8(opcode & 0x00ff)
     state.regs[reg_n] += data
 
@@ -255,7 +255,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   /* 9xy0 - SNE Vx, Vy
   Vx != Vyの場合、次の命令をスキップする。つまり、プログラムカウンタを2インクリメントする。
   */
-  case 9:
+  case 0x9:
     x := 0x0f00 >> 8
     y := 0xf0 >> 4
 
@@ -321,7 +321,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     キーボードををチェックし、Vxの値のキーが押されていればプログラムカウンタを2インクリメントする。
     */
     case 0x9e:
-      x := opcode & 0x0f00 >> 8
+      x := (opcode & 0x0f00) >> 8
       key := state.regs[x]
       key = key < 10 ? key + 48 : key + 55
 
@@ -334,7 +334,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     キーボードををチェックし、Vxの値のキーが押されていなければプログラムカウンタを2インクリメントする。
     */
     case 0xa1:
-      x := opcode & 0x0f00 >> 8
+      x := (opcode & 0x0f00) >> 8
       key := state.regs[x]
       key = key < 10 ? key + 48 : key + 55
 
@@ -358,7 +358,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
         // キーが押されていない限り、この命令を繰り返す
         jumped = true
       } else {
-        x := opcode & 0x0f00 >> 8
+        x := (opcode & 0x0f00) >> 8
         state.regs[x] = u8(int(key))
       }
 
