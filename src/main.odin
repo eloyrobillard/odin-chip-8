@@ -255,8 +255,8 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   Vx != Vyの場合、次の命令をスキップする。つまり、プログラムカウンタを2インクリメントする。
   */
   case 0x9:
-    x := 0x0f00 >> 8
-    y := 0xf0 >> 4
+    x := (opcode & 0x0f00) >> 8
+    y := (opcode & 0xf0) >> 4
 
     vx := state.regs[x]
     vy := state.regs[y]
