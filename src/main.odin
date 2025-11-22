@@ -99,7 +99,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   fst_nib := opcode & 0xf000 >> 12
 
   switch fst_nib {
-  case 0:
+  case 0x0:
     low_byte := opcode & 0x00ff
 
     switch low_byte {
@@ -128,7 +128,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   アドレスNNNにジャンプする。
   インタプリタはプログラムカウンタをNNNにする。
   */
-  case 1:
+  case 0x1:
     addr := opcode & 0x0fff
     state.pc = addr
     jumped = true
@@ -136,7 +136,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   /* 2NNN - CALL addr
   アドレスNNNのサブルーチンをCallする。インタプリタはスタックポインタをインクリメントし、それから現在のプログラムカウンタをスタックの一番上に置く。さらにプログラムカウンタにNNNをセットする。
   */
-  case 2:
+  case 0x2:
     state.sp += 1
     // 次の命令のアドレスをスタックにプッシュ
     state.stack[state.sp] = state.pc + 2
@@ -149,7 +149,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   /* 3xkk - SE Vx, byte
   Vx = kkの場合、次の命令をスキップする。インタプリタはレジスタVxとkkを比較し、二つが等しいならプログラムカウンタを2進める。
   */
-  case 3:
+  case 0x3:
     reg_n := (opcode & 0x0f00) >> 8
     reg := state.regs[reg_n]
     cmp := u8(opcode & 0x00ff)
@@ -159,7 +159,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   /* 4xkk - SNE Vx, byte
   Vx != kkの場合、次の命令をスキップする。インタプリタはレジスタVxとkkを比較し、二つが異なるならプログラムカウンタを2進める。
   */
-  case 4:
+  case 0x4:
     reg_n := (opcode & 0x0f00) >> 8
     reg := state.regs[reg_n]
     cmp := u8(opcode & 0x00ff)
@@ -168,10 +168,9 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
 
 
   /* 5xy0 - SE Vx, Vy
-
   Vx = Vyの場合、次の命令をスキップする。インタプリタはレジスタVxとVyを比較し、二つが等しいならプログラムカウンタを2進める。
   */
-  case 5:
+  case 0x5:
     vx_n := (opcode & 0x0f00) >> 8
     vy_n := (opcode & 0x00f0) >> 4
 
@@ -193,12 +192,12 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
 
   VxにVx + kkをセットする。インタプリタはレジスタVxにkkの値を加算する。
   */
-  case 7:
+  case 0x7:
     vx := (opcode & 0x0f00) >> 8
     data := u8(opcode & 0x00ff)
     state.regs[vx] += data
 
-  case 8:
+  case 0x8:
     fst_nibble := opcode & 0xf
     vx := (opcode & 0x0f00) >> 8
     vy := (opcode & 0x00f0) >> 4
