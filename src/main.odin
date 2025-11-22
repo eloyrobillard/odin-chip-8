@@ -14,6 +14,7 @@ State :: struct {
   dsp:   [32]u64,
   dsp_w: i32,
   dsp_h: i32,
+  scale: i32,
 }
 
 main :: proc() {
@@ -34,14 +35,18 @@ main :: proc() {
     pc    = instrs_start_addr,
     dsp_w = 64,
     dsp_h = 32,
+    scale = 30,
   }
 
   num_instr := load_instructions_in_ram(&binary, &state, instrs_start_addr)
 
   // ディスプレイを起動
-  scale: i32 = 30
-  rl.InitWindow(state.dsp_w * scale, state.dsp_h * scale, "Chip 8 Test")
-  rl.SetTargetFPS(144)
+  rl.InitWindow(
+    state.dsp_w * state.scale,
+    state.dsp_h * state.scale,
+    "Chip 8 Test",
+  )
+  rl.SetTargetFPS(256)
 
   for !rl.WindowShouldClose() {
     rl.BeginDrawing()
@@ -52,11 +57,9 @@ main :: proc() {
 
     jumped := execute_opcode(opcode, &state)
 
-    draw_display(&state.dsp, state.dsp_w, state.dsp_h, scale)
+    if !jumped do state.pc += 2
 
     rl.EndDrawing()
-
-    if !jumped do state.pc += 2
   }
 
   rl.CloseWindow()
@@ -281,10 +284,8 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     y := (opcode & 0x00f0) >> 4
     n := (opcode & 0x000f)
 
-    assert(i32(state.regs[x]) <= state.dsp_w)
     start_x := state.regs[x]
 
-    assert(i32(state.regs[y]) <= state.dsp_h)
     start_y := u16(state.regs[y])
 
     for i in 0 ..< n {
@@ -310,6 +311,8 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
 
       state.dsp[row] ~= shifted_byte
     }
+
+    draw_display(&state.dsp, state.dsp_w, state.dsp_h, state.scale)
 
   case 0xE:
     fst_byte := opcode & 0xff
