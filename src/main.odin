@@ -65,12 +65,34 @@ main :: proc() {
   rl.CloseWindow()
 }
 
+draw_display_at :: proc(
+  display: ^[32]u64,
+  WIDTH: i32,
+  HEIGHT: i32,
+  scale: i32,
+  start_y: i32,
+  end_y: i32,
+  start_x: i32,
+  end_x: i32,
+) {
+  for y in start_y ..= (end_y % HEIGHT) {
+    row := display[y]
+    for x in start_x ..< (end_x % WIDTH) {
+      x_from_left := WIDTH - x - 1
+      set := (row & (1 << u32(x_from_left))) > 0
+
+      if set do rl.DrawRectangle(x * scale, y * scale, scale, scale, rl.WHITE)
+      else do rl.DrawRectangle(x * scale, y * scale, scale, scale, rl.BLACK)
+    }
+  }
+}
+
 draw_display :: proc(display: ^[32]u64, WIDTH: i32, HEIGHT: i32, scale: i32) {
   rl.ClearBackground(rl.BLACK)
 
   for y in 0 ..< HEIGHT {
+    row := display[y]
     for x in 0 ..< WIDTH {
-      row := display[y]
       x_from_left := WIDTH - x - 1
       set := (row & (1 << u32(x_from_left))) > 0
 
@@ -312,7 +334,16 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
       state.dsp[row] ~= shifted_byte
     }
 
-    draw_display(&state.dsp, state.dsp_w, state.dsp_h, state.scale)
+    draw_display_at(
+      &state.dsp,
+      state.dsp_w,
+      state.dsp_h,
+      state.scale,
+      i32(start_y),
+      i32(start_y + n),
+      i32(start_x),
+      i32(start_x + 8),
+    )
 
   case 0xE:
     fst_byte := opcode & 0xff
