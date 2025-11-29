@@ -134,6 +134,8 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     case 0xE0:
       state.dsp = [32]u64{}
 
+      rl.ClearBackground(rl.BLACK)
+
     /* 00EE - RET
     サブルーチンから戻る。プログラムカウンタにスタックの一番上のアドレスをセットし、スタックポインタから1を引く。
     */
