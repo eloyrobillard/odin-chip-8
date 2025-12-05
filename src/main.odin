@@ -71,17 +71,26 @@ run :: proc() {
   rl.SetTargetFPS(256)
 
   for !rl.WindowShouldClose() {
-    rl.BeginDrawing()
-
     fst_byte := u16(state.ram[state.pc])
     snd_byte := u16(state.ram[state.pc + 1])
     opcode: u16 = fst_byte << 8 + snd_byte
 
-    jumped := execute_opcode(opcode, &state)
+    jumped := false
+
+    if fst_byte & 0xf0 != 0xd0 {
+      jumped = execute_opcode(opcode, &state)
+
+      // NOTE: usually done inside EndDrawing
+      rl.PollInputEvents()
+    } else {
+      rl.BeginDrawing()
+
+      jumped = execute_opcode(opcode, &state)
+
+      rl.EndDrawing()
+    }
 
     if !jumped do state.pc += 2
-
-    rl.EndDrawing()
   }
 
   rl.CloseWindow()
