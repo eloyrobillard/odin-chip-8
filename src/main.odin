@@ -2,22 +2,25 @@ package main
 
 import "base:runtime"
 import "core:fmt"
+import "core:math"
 import "core:os"
 import "core:prof/spall"
 import "core:sync"
+import "core:time"
 import rl "vendor:raylib"
 
 State :: struct {
-  I:     u16,
-  sp:    u8, // Stack Pointer, スタックの先頭のインデックスを表す
-  pc:    u16, // 現在の実行アドレスを格納
-  regs:  [16]u8,
-  stack: [16]u16,
-  ram:   [4096]u8,
-  dsp:   [32]u64,
-  dsp_w: i32,
-  dsp_h: i32,
-  scale: i32,
+  I:           u16,
+  sp:          u8, // Stack Pointer, スタックの先頭のインデックスを表す
+  pc:          u16, // 現在の実行アドレスを格納
+  regs:        [16]u8,
+  delay_timer: u8,
+  stack:       [16]u16,
+  ram:         [4096]u8,
+  dsp:         [32]u64,
+  dsp_w:       i32,
+  dsp_h:       i32,
+  scale:       i32,
 }
 spall_ctx: spall.Context
 @(thread_local)
@@ -60,12 +63,10 @@ run :: proc() {
   num_instr := load_instructions_in_ram(&binary, &state, instrs_start_addr)
 
   // ディスプレイを起動
-  rl.InitWindow(
-    state.dsp_w * state.scale,
-    state.dsp_h * state.scale,
-    "Chip 8 Test",
-  )
-  rl.SetTargetFPS(256)
+  rl.InitWindow(state.dsp_w * state.scale, state.dsp_h * state.scale, "Chip 8 Test")
+  rl.SetTargetFPS(60)
+
+  start := time.tick_now()
 
   for !rl.WindowShouldClose() {
     fst_byte := u16(state.ram[state.pc])
@@ -88,6 +89,16 @@ run :: proc() {
     }
 
     if !jumped do state.pc += 2
+
+    // decrease delay timer at a rate of 60Hz
+    delta_T := time.tick_since(start)
+    delta_ms := time.duration_milliseconds(delta_T)
+    start = time.tick_now()
+
+    if state.delay_timer > 0 {
+      fmt.printfln("dt: %d (delta ms: %f)", state.delay_timer, delta_ms)
+      state.delay_timer = max(0, state.delay_timer - u8(delta_ms * 60 / 1000))
+    }
   }
 
   rl.CloseWindow()
@@ -405,6 +416,13 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     fst_byte := opcode & 0xff
 
     switch fst_byte {
+    /* Fx07 - LD Vx, DT
+    VxにDelay timerの値dtをセットする。
+    */
+    case 0x07:
+      x := (opcode & 0x0f00) >> 8
+      state.regs[x] = state.delay_timer
+
     /* Fx0A - LD Vx, K
     押されたキーをVxにセットする。
     キーが入力されるまで全ての実行をストップする。キーが押されるとその値をVxにセットする。
@@ -420,6 +438,13 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
         state.regs[x] = u8(int(key))
       }
 
+
+    /* Fx15 - LD DT, Vx
+    Delay timer dtにVxをセットする。
+    */
+    case 0x15:
+      x := (opcode & 0x0f00) >> 8
+      state.delay_timer = state.regs[x]
 
     /* Fx1E - ADD I, Vx
     IにI + Vxをセットする
