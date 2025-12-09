@@ -30,10 +30,7 @@ main :: proc() {
   buffer_backing := make([]u8, spall.BUFFER_DEFAULT_SIZE)
   defer delete(buffer_backing)
 
-  spall_buffer = spall.buffer_create(
-    buffer_backing,
-    u32(sync.current_thread_id()),
-  )
+  spall_buffer = spall.buffer_create(buffer_backing, u32(sync.current_thread_id()))
   defer spall.buffer_destroy(&spall_ctx, &spall_buffer)
 
   run()
@@ -132,11 +129,7 @@ draw_display :: proc(display: ^[32]u64, WIDTH: i32, HEIGHT: i32, scale: i32) {
   }
 }
 
-load_instructions_in_ram :: proc(
-  binary: ^[]u16,
-  state: ^State,
-  start_addr: u16,
-) -> u16 {
+load_instructions_in_ram :: proc(binary: ^[]u16, state: ^State, start_addr: u16) -> u16 {
   // load in Big Endian mode starting at address 0x200
   offset: u16 = 0
   for word in binary {
@@ -354,8 +347,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
         // 横方向に折り返す
         num_bits_not_wrapped := u32(state.dsp_w - i32(start_x))
         shifted_byte |=
-          (u64(byte) & (0xff >> num_bits_not_wrapped)) <<
-          u32(state.dsp_w - (8 - i32(num_bits_not_wrapped)))
+          (u64(byte) & (0xff >> num_bits_not_wrapped)) << u32(state.dsp_w - (8 - i32(num_bits_not_wrapped)))
       }
 
       // 縦方向に折返す
@@ -479,17 +471,11 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
 // Automatic profiling of every procedure:
 
 @(instrumentation_enter)
-spall_enter :: proc "contextless" (
-  proc_address, call_site_return_address: rawptr,
-  loc: runtime.Source_Code_Location,
-) {
+spall_enter :: proc "contextless" (proc_address, call_site_return_address: rawptr, loc: runtime.Source_Code_Location) {
   spall._buffer_begin(&spall_ctx, &spall_buffer, "", "", loc)
 }
 
 @(instrumentation_exit)
-spall_exit :: proc "contextless" (
-  proc_address, call_site_return_address: rawptr,
-  loc: runtime.Source_Code_Location,
-) {
+spall_exit :: proc "contextless" (proc_address, call_site_return_address: rawptr, loc: runtime.Source_Code_Location) {
   spall._buffer_end(&spall_ctx, &spall_buffer)
 }
