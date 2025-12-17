@@ -20,6 +20,8 @@ State :: struct {
   // そうならないように、マイクロ秒単位の変化を蓄積する
   // （ミリ秒でも切り捨てられていた）
   delay_timer_mus: u32,
+  sound_timer:     u8,
+  sound_timer_mus: u32,
   stack:           [16]u16,
   ram:             [4096]u8,
   dsp:             [32]u64,
@@ -100,6 +102,11 @@ run :: proc() {
     if state.delay_timer > 0 {
       state.delay_timer_mus = max(0, state.delay_timer_mus - u32(delta_mus * 60))
       state.delay_timer = u8(state.delay_timer_mus / 1000_000)
+    }
+
+    if state.sound_timer > 0 {
+      state.sound_timer_mus = max(0, state.sound_timer_mus - u32(delta_mus * 60))
+      state.sound_timer = u8(state.sound_timer_mus / 1000_000)
     }
   }
 
@@ -392,6 +399,14 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
       x := (opcode & 0x0f00) >> 8
       state.delay_timer = state.regs[x]
       state.delay_timer_mus = u32(state.regs[x]) * 1000_000
+
+    /* Fx18 - LD ST, Vx
+    Sound timer stにVxをセットする。
+    */
+    case 0x18:
+      x := (opcode & 0x0f00) >> 8
+      state.sound_timer = state.regs[x]
+      state.sound_timer_mus = u32(state.regs[x]) * 1000_000
 
     /* Fx1E - ADD I, Vx
     IにI + Vxをセットする
