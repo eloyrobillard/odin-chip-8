@@ -77,18 +77,15 @@ run :: proc() {
     snd_byte := u16(state.ram[state.pc + 1])
     opcode: u16 = fst_byte << 8 + snd_byte
 
-    jumped := false
+    jumped := execute_opcode(opcode, &state)
 
+    // HACK: fixes rendering issues that occurred after decoupling opcode execution from draw cycle.
+    // Somehow, beginning draw every time we loop around fixed those.
+    rl.BeginDrawing()
     if fst_byte & 0xf0 != 0xd0 {
-      jumped = execute_opcode(opcode, &state)
-
       // NOTE: usually done inside EndDrawing
       rl.PollInputEvents()
     } else {
-      rl.BeginDrawing()
-
-      jumped = execute_opcode(opcode, &state)
-
       rl.EndDrawing()
     }
 
