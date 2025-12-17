@@ -340,52 +340,8 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     data := opcode & 0x0fff
     state.I = data
 
-  /* Dxyn - DRW Vx, Vy, nibble
-  アドレスIのnバイトのスプライトを(Vx, Vy)に描画する。Vfにはcollision(後述)をセットする。
-  アドレスIのnバイトのスプライトを読み出し、スプライトとして(Vx, Vy)に描画する。スプライトは画面にXORする。このとき、消されたピクセルが一つでもある場合はVfに1、それ以外の場合は0をセットする。スプライトの一部が画面からはみ出る場合は、反対側から折り返す。
-  */
   case 0xD:
-    x := (opcode & 0x0f00) >> 8
-    y := (opcode & 0x00f0) >> 4
-    n := (opcode & 0x000f)
-
-    start_x := state.regs[x]
-
-    start_y := u16(state.regs[y])
-
-    for i in 0 ..< n {
-      byte := state.ram[state.I + i]
-      bits_in_byte: i32 = 8
-      byte_from_right := u32(state.dsp_w - bits_in_byte)
-      byte_to_leftmost := u64(byte) << byte_from_right
-      shifted_byte := byte_to_leftmost >> u32(start_x)
-
-      if i32(start_x) > i32(byte_from_right) {
-        // 横方向に折り返す
-        num_bits_not_wrapped := u32(state.dsp_w - i32(start_x))
-        shifted_byte |=
-          (u64(byte) & (0xff >> num_bits_not_wrapped)) << u32(state.dsp_w - (8 - i32(num_bits_not_wrapped)))
-      }
-
-      // 縦方向に折返す
-      row := u16(i32(start_y + i) % state.dsp_h)
-
-      // 衝突が起こったら、Vfに１をセット
-      if (state.dsp[row] & shifted_byte) > 0 do state.regs[0xf] = 1
-
-      state.dsp[row] ~= shifted_byte
-    }
-
-    draw_display_at(
-      &state.dsp,
-      state.dsp_w,
-      state.dsp_h,
-      state.scale,
-      i32(start_y),
-      i32(start_y + n),
-      i32(start_x),
-      i32(start_x + 8),
-    )
+    DRW(opcode, state)
 
   case 0xE:
     fst_byte := opcode & 0xff
@@ -498,6 +454,55 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   }
 
   return jumped
+}
+
+/*
+Dxyn - DRW Vx, Vy, nibble
+アドレスIのnバイトのスプライトを(Vx, Vy)に描画する。Vfにはcollision(後述)をセットする。
+アドレスIのnバイトのスプライトを読み出し、スプライトとして(Vx, Vy)に描画する。スプライトは画面にXORする。このとき、消されたピクセルが一つでもある場合はVfに1、それ以外の場合は0をセットする。スプライトの一部が画面からはみ出る場合は、反対側から折り返す。
+*/
+DRW :: proc(opcode: u16, state: ^State) {
+  x := (opcode & 0x0f00) >> 8
+  y := (opcode & 0x00f0) >> 4
+  n := (opcode & 0x000f)
+
+  start_x := state.regs[x]
+
+  start_y := u16(state.regs[y])
+
+  for i in 0 ..< n {
+    byte := state.ram[state.I + i]
+    bits_in_byte: i32 = 8
+    byte_from_right := u32(state.dsp_w - bits_in_byte)
+    byte_to_leftmost := u64(byte) << byte_from_right
+    shifted_byte := byte_to_leftmost >> u32(start_x)
+
+    if i32(start_x) > i32(byte_from_right) {
+      // 横方向に折り返す
+      num_bits_not_wrapped := u32(state.dsp_w - i32(start_x))
+      shifted_byte |=
+        (u64(byte) & (0xff >> num_bits_not_wrapped)) << u32(state.dsp_w - (8 - i32(num_bits_not_wrapped)))
+    }
+
+    // 縦方向に折返す
+    row := u16(i32(start_y + i) % state.dsp_h)
+
+    // 衝突が起こったら、Vfに１をセット
+    if (state.dsp[row] & shifted_byte) > 0 do state.regs[0xf] = 1
+
+    state.dsp[row] ~= shifted_byte
+  }
+
+  draw_display_at(
+    &state.dsp,
+    state.dsp_w,
+    state.dsp_h,
+    state.scale,
+    i32(start_y),
+    i32(start_y + n),
+    i32(start_x),
+    i32(start_x + 8),
+  )
 }
 
 // Automatic profiling of every procedure:
