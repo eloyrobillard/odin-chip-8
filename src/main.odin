@@ -132,20 +132,6 @@ draw_display_at :: proc(
   }
 }
 
-draw_display :: proc(display: ^[32]u64, WIDTH: i32, HEIGHT: i32, scale: i32) {
-  rl.ClearBackground(rl.BLACK)
-
-  for y in 0 ..< HEIGHT {
-    row := display[y]
-    for x in 0 ..< WIDTH {
-      x_from_left := WIDTH - x - 1
-      set := (row & (1 << u32(x_from_left))) > 0
-
-      if set do rl.DrawRectangle(x * scale, y * scale, scale, scale, rl.WHITE)
-    }
-  }
-}
-
 load_instructions_in_ram :: proc(binary: ^[]u16, state: ^State, start_addr: u16) -> u16 {
   // load in Big Endian mode starting at address 0x200
   offset: u16 = 0
