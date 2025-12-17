@@ -1,0 +1,5 @@
+# Odin build
+*.bin
+
+# Spall profiler
+*.spall
