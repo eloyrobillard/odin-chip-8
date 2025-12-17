@@ -18,7 +18,7 @@ State :: struct {
   // delay_timer は秒単位で更新されるが、メインループの更新は早すぎて
   // 秒単位だと時間のデルタは切り捨てられてしまう
   // そうならないように、ミリ秒単位の変化を蓄積する
-  delay_timer_ms: u16,
+  delay_timer_ms: u32,
   stack:          [16]u16,
   ram:            [4096]u8,
   dsp:            [32]u64,
@@ -100,7 +100,7 @@ run :: proc() {
     start = time.tick_now()
 
     if state.delay_timer > 0 {
-      state.delay_timer_ms = max(0, state.delay_timer_ms - u16(delta_ms * 60))
+      state.delay_timer_ms = max(0, state.delay_timer_ms - u32(delta_ms * 60))
       state.delay_timer = u8(state.delay_timer_ms / 1000)
     }
   }
@@ -451,6 +451,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     case 0x15:
       x := (opcode & 0x0f00) >> 8
       state.delay_timer = state.regs[x]
+      state.delay_timer_ms = u32(state.regs[x]) * 1000
 
     /* Fx1E - ADD I, Vx
     IにI + Vxをセットする
