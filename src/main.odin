@@ -23,7 +23,9 @@ State :: struct {
   sound_timer:     u8,
   sound_timer_mus: u32,
   stack:           [16]u16,
-  ram:             [4096]u8,
+  // HACK: RAMの最大の大きさは4096のはずだが、これじゃ
+  // Quirks テストは収まらないから倍にした
+  ram:             [8192]u8,
   dsp:             [32]u64,
   dsp_w:           i32,
   dsp_h:           i32,
