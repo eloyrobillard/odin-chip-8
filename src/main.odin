@@ -10,17 +10,21 @@ import "core:time"
 import rl "vendor:raylib"
 
 State :: struct {
-  I:           u16,
-  sp:          u8, // Stack Pointer, スタックの先頭のインデックスを表す
-  pc:          u16, // 現在の実行アドレスを格納
-  regs:        [16]u8,
-  delay_timer: u8,
-  stack:       [16]u16,
-  ram:         [4096]u8,
-  dsp:         [32]u64,
-  dsp_w:       i32,
-  dsp_h:       i32,
-  scale:       i32,
+  I:              u16,
+  sp:             u8, // Stack Pointer, スタックの先頭のインデックスを表す
+  pc:             u16, // 現在の実行アドレスを格納
+  regs:           [16]u8,
+  delay_timer:    u8,
+  // delay_timer は秒単位で更新されるが、メインループの更新は早すぎて
+  // 秒単位だと時間のデルタは切り捨てられてしまう
+  // そうならないように、ミリ秒単位の変化を蓄積する
+  delay_timer_ms: u16,
+  stack:          [16]u16,
+  ram:            [4096]u8,
+  dsp:            [32]u64,
+  dsp_w:          i32,
+  dsp_h:          i32,
+  scale:          i32,
 }
 spall_ctx: spall.Context
 @(thread_local)
@@ -96,8 +100,8 @@ run :: proc() {
     start = time.tick_now()
 
     if state.delay_timer > 0 {
-      fmt.printfln("dt: %d (delta ms: %f)", state.delay_timer, delta_ms)
-      state.delay_timer = max(0, state.delay_timer - u8(delta_ms * 60 / 1000))
+      state.delay_timer_ms = max(0, state.delay_timer_ms - u16(delta_ms * 60))
+      state.delay_timer = u8(state.delay_timer_ms / 1000)
     }
   }
 
