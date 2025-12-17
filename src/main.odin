@@ -10,21 +10,22 @@ import "core:time"
 import rl "vendor:raylib"
 
 State :: struct {
-  I:              u16,
-  sp:             u8, // Stack Pointer, スタックの先頭のインデックスを表す
-  pc:             u16, // 現在の実行アドレスを格納
-  regs:           [16]u8,
-  delay_timer:    u8,
-  // delay_timer は秒単位で更新されるが、メインループの更新は早すぎて
+  I:               u16,
+  sp:              u8, // Stack Pointer, スタックの先頭のインデックスを表す
+  pc:              u16, // 現在の実行アドレスを格納
+  regs:            [16]u8,
+  delay_timer:     u8,
+  // NOTE: delay_timer は秒単位で更新されるが、メインループの更新は早すぎて
   // 秒単位だと時間のデルタは切り捨てられてしまう
-  // そうならないように、ミリ秒単位の変化を蓄積する
-  delay_timer_ms: u32,
-  stack:          [16]u16,
-  ram:            [4096]u8,
-  dsp:            [32]u64,
-  dsp_w:          i32,
-  dsp_h:          i32,
-  scale:          i32,
+  // そうならないように、マイクロ秒単位の変化を蓄積する
+  // （ミリ秒でも切り捨てられていた）
+  delay_timer_mus: u32,
+  stack:           [16]u16,
+  ram:             [4096]u8,
+  dsp:             [32]u64,
+  dsp_w:           i32,
+  dsp_h:           i32,
+  scale:           i32,
 }
 spall_ctx: spall.Context
 @(thread_local)
@@ -93,12 +94,12 @@ run :: proc() {
 
     // decrease delay timer at a rate of 60Hz
     delta_T := time.tick_since(start)
-    delta_ms := time.duration_milliseconds(delta_T)
+    delta_mus := time.duration_microseconds(delta_T)
     start = time.tick_now()
 
     if state.delay_timer > 0 {
-      state.delay_timer_ms = max(0, state.delay_timer_ms - u32(delta_ms * 60))
-      state.delay_timer = u8(state.delay_timer_ms / 1000)
+      state.delay_timer_mus = max(0, state.delay_timer_mus - u32(delta_mus * 60))
+      state.delay_timer = u8(state.delay_timer_mus / 1000_000)
     }
   }
 
@@ -390,7 +391,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     case 0x15:
       x := (opcode & 0x0f00) >> 8
       state.delay_timer = state.regs[x]
-      state.delay_timer_ms = u32(state.regs[x]) * 1000
+      state.delay_timer_mus = u32(state.regs[x]) * 1000_000
 
     /* Fx1E - ADD I, Vx
     IにI + Vxをセットする
