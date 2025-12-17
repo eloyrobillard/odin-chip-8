@@ -118,14 +118,16 @@ draw_display_at :: proc(
   start_x: i32,
   end_x: i32,
 ) {
-  for y in start_y ..= (end_y % HEIGHT) {
-    row := display[y]
-    for x in start_x ..< (end_x % WIDTH) {
-      x_from_left := WIDTH - x - 1
-      set := (row & (1 << u32(x_from_left))) > 0
+  for y in start_y ..< end_y {
+    yy := y % HEIGHT
+    row := display[yy]
+    for x in start_x ..< end_x {
+      xx := x % WIDTH
+      xx_from_left := WIDTH - xx - 1
+      set := (row & (1 << u32(xx_from_left))) > 0
 
-      if set do rl.DrawRectangle(x * scale, y * scale, scale, scale, rl.WHITE)
-      else do rl.DrawRectangle(x * scale, y * scale, scale, scale, rl.BLACK)
+      if set do rl.DrawRectangle(xx * scale, yy * scale, scale, scale, rl.WHITE)
+      else do rl.DrawRectangle(xx * scale, yy * scale, scale, scale, rl.BLACK)
     }
   }
 }
