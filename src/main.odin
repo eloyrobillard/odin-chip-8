@@ -189,6 +189,120 @@ load_instructions_in_ram :: proc(binary: ^[]u16, state: ^State, start_addr: u16)
   return offset
 }
 
+load_preset_sprites :: proc(state: ^State) {
+  // 0
+  state.ram[0] = 0xF0
+  state.ram[1] = 0x90
+  state.ram[2] = 0x90
+  state.ram[3] = 0x90
+  state.ram[4] = 0xF0
+
+  // 1
+  state.ram[5] = 0x20
+  state.ram[6] = 0x60
+  state.ram[7] = 0x20
+  state.ram[8] = 0x20
+  state.ram[9] = 0x70
+
+  // 2
+  state.ram[10] = 0xF0
+  state.ram[11] = 0x10
+  state.ram[12] = 0xF0
+  state.ram[13] = 0x80
+  state.ram[14] = 0xF0
+
+  // 3
+  state.ram[15] = 0xF0
+  state.ram[16] = 0x10
+  state.ram[17] = 0xF0
+  state.ram[18] = 0x10
+  state.ram[19] = 0xF0
+
+  // 4
+  state.ram[20] = 0x90
+  state.ram[21] = 0x90
+  state.ram[22] = 0xF0
+  state.ram[23] = 0x10
+  state.ram[24] = 0x10
+
+  // 5
+  state.ram[25] = 0xF0
+  state.ram[26] = 0x80
+  state.ram[27] = 0xF0
+  state.ram[28] = 0x10
+  state.ram[29] = 0xF0
+
+  // 6
+  state.ram[30] = 0xF0
+  state.ram[31] = 0x80
+  state.ram[32] = 0xF0
+  state.ram[33] = 0x90
+  state.ram[34] = 0xF0
+
+  // 7
+  state.ram[35] = 0xF0
+  state.ram[36] = 0x10
+  state.ram[37] = 0x20
+  state.ram[38] = 0x40
+  state.ram[39] = 0x40
+
+  // 8
+  state.ram[40] = 0xF0
+  state.ram[41] = 0x90
+  state.ram[42] = 0xF0
+  state.ram[43] = 0x90
+  state.ram[44] = 0xF0
+
+  // 9
+  state.ram[45] = 0xF0
+  state.ram[46] = 0x90
+  state.ram[47] = 0xF0
+  state.ram[48] = 0x10
+  state.ram[49] = 0xF0
+
+  // A
+  state.ram[50] = 0xF0
+  state.ram[51] = 0x90
+  state.ram[52] = 0xF0
+  state.ram[53] = 0x90
+  state.ram[54] = 0x90
+
+  // B
+  state.ram[55] = 0xE0
+  state.ram[56] = 0x90
+  state.ram[57] = 0xE0
+  state.ram[58] = 0x90
+  state.ram[59] = 0xE0
+
+  // C
+  state.ram[60] = 0xF0
+  state.ram[61] = 0x80
+  state.ram[62] = 0x80
+  state.ram[63] = 0x80
+  state.ram[64] = 0xF0
+
+  // D
+  state.ram[65] = 0xE0
+  state.ram[66] = 0x90
+  state.ram[67] = 0x90
+  state.ram[68] = 0x90
+  state.ram[69] = 0xE0
+
+  // E
+  state.ram[70] = 0xF0
+  state.ram[71] = 0x80
+  state.ram[72] = 0xF0
+  state.ram[73] = 0x80
+  state.ram[74] = 0xF0
+
+  // F
+  state.ram[75] = 0xF0
+  state.ram[76] = 0x80
+  state.ram[77] = 0xF0
+  state.ram[78] = 0x80
+  state.ram[79] = 0x80
+}
+
 execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   jumped := false
   fst_nib := opcode & 0xf000 >> 12
@@ -490,6 +604,13 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
       x := (opcode & 0x0f00) >> 8
 
       state.I += u16(state.regs[x])
+
+    /* Fx29 - LD F, Vx
+    IにVxのスプライト(fontset)のアドレスをセットする。
+    */
+    case 0x29:
+      x := (opcode & 0x0f00) >> 8
+      state.I = u16(state.regs[x]) * 5
 
     /*Fx33 - LD B, Vx
     アドレスI, I+1、I+2にVxのBCDをセットする。
