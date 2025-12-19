@@ -339,7 +339,10 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   */
   case 0xB:
     addr := opcode & 0x0fff
-    state.pc = addr + u16(state.regs[0])
+    // NOTE: Super-Chip quirk!
+    // nnn + Vxのアドレスのジャンプ（x = 上位桁目）
+    x := (opcode & 0x0f00) >> 8
+    state.pc = addr + u16(state.regs[x])
     jumped = true
 
   /* Cxkk - RND Vx, byte
