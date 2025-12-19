@@ -10,6 +10,14 @@ import "core:sync"
 import "core:time"
 import rl "vendor:raylib"
 
+DSP_SCALE_LORES: i32 = 30
+DSP_SCALE_HIRES: i32 = 15
+
+DSP_MODE :: enum {
+  LORES,
+  HIRES,
+}
+
 State :: struct {
   I:               u16,
   sp:              u8, // Stack Pointer, スタックの先頭のインデックスを表す
@@ -27,10 +35,12 @@ State :: struct {
   // HACK: RAMの最大の大きさは4096のはずだが、これじゃ
   // Quirks テストは収まらないから倍にした
   ram:             [8192]u8,
-  dsp:             [32]u64,
+  dsp_mode:        DSP_MODE,
+  dsp_lores:       [32]u64,
+  dsp_hires:       [64]u128,
   dsp_w:           i32,
   dsp_h:           i32,
-  scale:           i32,
+  dsp_scale:       i32,
 }
 spall_ctx: spall.Context
 @(thread_local)
@@ -64,16 +74,17 @@ run :: proc() {
   // オペコードを解読し、実行する
   instrs_start_addr: u16 = 0x200
   state := State {
-    pc    = instrs_start_addr,
-    dsp_w = 64,
-    dsp_h = 32,
-    scale = 30,
+    pc        = instrs_start_addr,
+    dsp_mode  = DSP_MODE.LORES,
+    dsp_w     = 64,
+    dsp_h     = 32,
+    dsp_scale = DSP_SCALE_LORES,
   }
 
   num_instr := load_instructions_in_ram(&binary, &state, instrs_start_addr)
 
   // ディスプレイを起動
-  rl.InitWindow(state.dsp_w * state.scale, state.dsp_h * state.scale, "Chip 8 Test")
+  rl.InitWindow(state.dsp_w * state.dsp_scale, state.dsp_h * state.dsp_scale, "Chip 8 Test")
   rl.SetTargetFPS(60)
 
   start := time.tick_now()
@@ -116,8 +127,32 @@ run :: proc() {
   rl.CloseWindow()
 }
 
-draw_display_at :: proc(
+draw_display_lores_at :: proc(
   display: ^[32]u64,
+  WIDTH: i32,
+  HEIGHT: i32,
+  scale: i32,
+  start_y: i32,
+  excl_end_y: i32,
+  start_x: i32,
+  excl_end_x: i32,
+) {
+  for y in start_y ..< excl_end_y {
+    yy := y % HEIGHT
+    row := display[yy]
+    for x in start_x ..< excl_end_x {
+      xx := x % WIDTH
+      xx_from_left := WIDTH - xx - 1
+      set := (row & (1 << u32(xx_from_left))) > 0
+
+      if set do rl.DrawRectangle(xx * scale, yy * scale, scale, scale, rl.WHITE)
+      else do rl.DrawRectangle(xx * scale, yy * scale, scale, scale, rl.BLACK)
+    }
+  }
+}
+
+draw_display_hires_at :: proc(
+  display: ^[64]u128,
   WIDTH: i32,
   HEIGHT: i32,
   scale: i32,
@@ -167,7 +202,11 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     ディプレイをクリアする。
     */
     case 0xE0:
-      state.dsp = [32]u64{}
+      if state.dsp_mode == DSP_MODE.LORES {
+        state.dsp_lores = [32]u64{}
+      } else {
+        state.dsp_hires = [64]u128{}
+      }
 
       rl.ClearBackground(rl.BLACK)
 
@@ -180,6 +219,19 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
 
       jumped = true
 
+    /* switch to lores mode (64x32) */
+    case 0xFE:
+      state.dsp_mode = DSP_MODE.LORES
+      state.dsp_w = 64
+      state.dsp_h = 32
+      state.dsp_scale = DSP_SCALE_LORES
+
+    /* switch to hires mode (128x64) */
+    case 0xFF:
+      state.dsp_mode = DSP_MODE.HIRES
+      state.dsp_w = 128
+      state.dsp_h = 64
+      state.dsp_scale = DSP_SCALE_HIRES
 
     case:
       fmt.printfln("Opcode not implemented: %4x", opcode)
@@ -354,7 +406,8 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     state.regs[x] = u8(rand.int31_max(256)) & kk
 
   case 0xD:
-    DRW(opcode, state)
+    if state.dsp_mode == DSP_MODE.LORES do DRW_lores(opcode, state)
+    else do DRW_hires(opcode, state)
 
   case 0xE:
     fst_byte := opcode & 0xff
@@ -487,14 +540,13 @@ Dxyn - DRW Vx, Vy, nibble
 アドレスIのnバイトのスプライトを(Vx, Vy)に描画する。Vfにはcollision(後述)をセットする。
 アドレスIのnバイトのスプライトを読み出し、スプライトとして(Vx, Vy)に描画する。スプライトは画面にXORする。このとき、消されたピクセルが一つでもある場合はVfに1、それ以外の場合は0をセットする。スプライトの一部が画面からはみ出る場合は、反対側から折り返す。
 */
-DRW :: proc(opcode: u16, state: ^State) {
+DRW_lores :: proc(opcode: u16, state: ^State) {
   x := (opcode & 0x0f00) >> 8
   y := (opcode & 0x00f0) >> 4
   n := (opcode & 0x000f)
 
-  start_x := state.regs[x]
-
-  start_y := u16(state.regs[y])
+  start_x := u8(i32(state.regs[x]) & (state.dsp_w - 1))
+  start_y := u16(i32(state.regs[y]) & (state.dsp_h - 1))
 
   for i in 0 ..< n {
     byte := state.ram[state.I + i]
@@ -503,31 +555,67 @@ DRW :: proc(opcode: u16, state: ^State) {
     byte_to_leftmost := u64(byte) << byte_from_right
     shifted_byte := byte_to_leftmost >> u32(start_x)
 
-    if i32(start_x) > i32(byte_from_right) {
-      // 横方向に折り返す
-      num_bits_not_wrapped := u32(state.dsp_w - i32(start_x))
-      shifted_byte |=
-        (u64(byte) & (0xff >> num_bits_not_wrapped)) << u32(state.dsp_w - (8 - i32(num_bits_not_wrapped)))
-    }
-
     // 縦方向に折返す
-    row := u16(i32(start_y + i) % state.dsp_h)
+    // NOTE: Super-Chip (modern): 縦軸折返しなし
+    row := u16(start_y + i)
+    if i32(row) >= state.dsp_h do break
 
     // 衝突が起こったら、Vfに１をセット
-    if (state.dsp[row] & shifted_byte) > 0 do state.regs[0xf] = 1
+    if (state.dsp_lores[row] & shifted_byte) > 0 do state.regs[0xf] = 1
 
-    state.dsp[row] ~= shifted_byte
+    state.dsp_lores[row] ~= shifted_byte
   }
 
-  draw_display_at(
-    &state.dsp,
+  draw_display_lores_at(
+    &state.dsp_lores,
     state.dsp_w,
     state.dsp_h,
-    state.scale,
+    state.dsp_scale,
     i32(start_y),
-    i32(start_y + n),
+    min(state.dsp_h - 1, i32(start_y + n)),
     i32(start_x),
-    i32(start_x + 8),
+    min(state.dsp_w - 1, i32(start_x + 8)),
+  )
+}
+
+DRW_hires :: proc(opcode: u16, state: ^State) {
+  x := (opcode & 0x0f00) >> 8
+  y := (opcode & 0x00f0) >> 4
+  n := (opcode & 0x000f)
+
+  DSP_W: i32 = 128
+  DSP_H: i32 = 64
+
+  start_x := u8(i32(state.regs[x]) & (DSP_W - 1))
+  start_y := u16(i32(state.regs[y]) & (DSP_H - 1))
+
+  for i in 0 ..< n {
+    byte := u128(state.ram[state.I + i])
+    bits_in_byte: i32 = 8
+    byte_from_right := u32(DSP_W - bits_in_byte)
+    byte_to_leftmost := byte << byte_from_right
+    shifted_byte := byte_to_leftmost >> u32(start_x)
+
+    // 縦方向に折返す
+    // NOTE: Super-Chip (modern): 縦軸折返しなし
+    row := u16(start_y + i)
+    if i32(row) >= DSP_H do break
+
+    // 衝突が起こったら、Vfに１をセット
+    if (state.dsp_hires[row] & shifted_byte) > 0 do state.regs[0xf] = 1
+
+    state.dsp_hires[row] ~= shifted_byte
+  }
+
+  draw_display_hires_at(
+    &state.dsp_hires,
+    DSP_W,
+    DSP_H,
+    state.dsp_scale,
+    i32(start_y),
+    min(state.dsp_h - 1, i32(start_y + n)),
+    i32(start_x),
+    min(state.dsp_w - 1, i32(start_x + 8)),
   )
 }
 
