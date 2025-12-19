@@ -333,6 +333,14 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     data := opcode & 0x0fff
     state.I = data
 
+  /* Bnnn - JP V0, addr
+  nnn + V0のアドレスにジャンプする。つまり、プログラムカウンタにnnn + V0をセットする
+  */
+  case 0xB:
+    addr := opcode & 0x0fff
+    state.pc = addr + u16(state.regs[0])
+    jumped = true
+
   case 0xD:
     DRW(opcode, state)
 
