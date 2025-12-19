@@ -346,7 +346,7 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
   Vxに0~255の乱数 AND kkをセットする。
   */
   case 0xC:
-    x := opcode & 0x0f00
+    x := (opcode & 0x0f00) >> 8
     kk := u8(opcode & 0x00ff)
     state.regs[x] = u8(rand.int31_max(256)) & kk
 
