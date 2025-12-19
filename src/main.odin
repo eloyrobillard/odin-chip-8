@@ -468,7 +468,12 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
       for i in 0 ..= x {
         state.regs[i] = state.ram[state.I + i]
       }
+
+
     }
+
+  case:
+    fmt.printfln("Opcode not implemented: %4x", opcode)
   }
 
   return jumped
