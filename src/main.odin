@@ -648,28 +648,31 @@ DRW_lores :: proc(opcode: u16, state: ^State) {
   y := (opcode & 0x00f0) >> 4
   n := (opcode & 0x000f)
 
-  start_x := u8(i32(state.regs[x]) & (state.dsp_w - 1))
-  start_y := u16(i32(state.regs[y]) & (state.dsp_h - 1))
+  DSP_W: i32 = 64
+  DSP_H: i32 = 32
+
+  start_x := u8(i32(state.regs[x]) & (DSP_W - 1))
+  start_y := u16(i32(state.regs[y]) & (DSP_H - 1))
 
   for i in 0 ..< n {
-    byte := state.ram[state.I + i]
-    bits_in_byte: i32 = 8
-    byte_from_right := u32(state.dsp_w - bits_in_byte)
-    byte_to_leftmost := u64(byte) << byte_from_right
-    shifted_byte := byte_to_leftmost >> u32(start_x)
-
     // 縦方向に折返す
     // NOTE: Super-Chip (modern): 縦軸折返しなし
-    row := u16(start_y + i)
-    if i32(row) >= state.dsp_h do break
+    row_i := u16(start_y + i)
+    if i32(row_i) >= DSP_H do break
+
+    byte := state.ram[state.I + i]
+    bits_in_byte: i32 = 8
+    byte_from_right: u32 = u32(state.dsp_w - bits_in_byte)
+    byte_to_leftmost: u64 = u64(byte) << byte_from_right
+    shifted_byte: u64 = byte_to_leftmost >> u32(start_x)
 
     // 衝突が起こったら、Vfに１をセット
-    if (state.dsp_lores[row] & shifted_byte) > 0 do state.regs[0xf] = 1
+    if (state.dsp_lores[row_i] & shifted_byte) > 0 do state.regs[0xf] = 1
 
-    state.dsp_lores[row] ~= shifted_byte
+    state.dsp_lores[row_i] ~= shifted_byte
   }
 
-  draw_display_lores(&state.dsp_lores, state.dsp_w, state.dsp_h, state.dsp_scale)
+  draw_display_lores(&state.dsp_lores, DSP_W, DSP_H, state.dsp_scale)
 }
 
 DRW_hires :: proc(opcode: u16, state: ^State) {
@@ -684,21 +687,21 @@ DRW_hires :: proc(opcode: u16, state: ^State) {
   start_y := u16(i32(state.regs[y]) & (DSP_H - 1))
 
   for i in 0 ..< n {
-    byte := u128(state.ram[state.I + i])
-    bits_in_byte: i32 = 8
-    byte_from_right := u32(DSP_W - bits_in_byte)
-    byte_to_leftmost := byte << byte_from_right
-    shifted_byte := byte_to_leftmost >> u32(start_x)
-
     // 縦方向に折返す
     // NOTE: Super-Chip (modern): 縦軸折返しなし
-    row := u16(start_y + i)
-    if i32(row) >= DSP_H do break
+    row_i := u16(start_y + i)
+    if i32(row_i) >= DSP_H do break
+
+    byte := state.ram[state.I + i]
+    bits_in_byte: i32 = 8
+    byte_from_right: u32 = u32(DSP_W - bits_in_byte)
+    byte_to_leftmost: u128 = u128(byte) << byte_from_right
+    shifted_byte: u128 = byte_to_leftmost >> u32(start_x)
 
     // 衝突が起こったら、Vfに１をセット
-    if (state.dsp_hires[row] & shifted_byte) > 0 do state.regs[0xf] = 1
+    if (state.dsp_hires[row_i] & shifted_byte) > 0 do state.regs[0xf] = 1
 
-    state.dsp_hires[row] ~= shifted_byte
+    state.dsp_hires[row_i] ~= shifted_byte
   }
 
   draw_display_hires(&state.dsp_hires, DSP_W, DSP_H, state.dsp_scale)
