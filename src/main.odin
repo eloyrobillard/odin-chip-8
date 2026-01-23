@@ -708,13 +708,26 @@ DRW_hires :: proc(opcode: u16, state: ^State) {
 }
 
 print_dsp :: proc(state: ^State) {
-  for row in state.dsp_lores {
-    arr := transmute([]u8)fmt.tprintf("%64b", row)
-    for _, i in arr {
-      if arr[i] == '1' do arr[i] = '#'
-      else do arr[i] = ' '
+  if state.dsp_mode == DSP_MODE.LORES {
+    for row in state.dsp_lores {
+      arr := transmute([]u8)fmt.tprintf("%64b", row)
+      for _, i in arr {
+        if arr[i] == '1' do arr[i] = '#'
+        else do arr[i] = ' '
+      }
+
+      fmt.println(string(arr))
     }
-    fmt.println(string(arr))
+  } else {
+    for row in state.dsp_hires {
+      arr := transmute([]u8)fmt.tprintf("%128b", row)
+      for _, i in arr {
+        if arr[i] == '1' do arr[i] = '#'
+        else do arr[i] = ' '
+      }
+
+      fmt.println(string(arr))
+    }
   }
 }
 
