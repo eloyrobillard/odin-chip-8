@@ -12,6 +12,10 @@ import rl "vendor:raylib"
 
 DSP_SCALE_LORES: i32 = 30
 DSP_SCALE_HIRES: i32 = 15
+DSP_WIDTH_LORES: i32 = 64
+DSP_WIDTH_HIRES: i32 = 128
+DSP_HEIGHT_LORES: i32 = 32
+DSP_HEIGHT_HIRES: i32 = 64
 
 DSP_MODE :: enum {
   LORES,
@@ -76,8 +80,8 @@ run :: proc() {
   state := State {
     pc        = instrs_start_addr,
     dsp_mode  = DSP_MODE.LORES,
-    dsp_w     = 64,
-    dsp_h     = 32,
+    dsp_w     = DSP_WIDTH_LORES,
+    dsp_h     = DSP_HEIGHT_LORES,
     dsp_scale = DSP_SCALE_LORES,
   }
 
