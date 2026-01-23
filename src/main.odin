@@ -707,6 +707,17 @@ DRW_hires :: proc(opcode: u16, state: ^State) {
   draw_display_hires(&state.dsp_hires, DSP_W, DSP_H, state.dsp_scale)
 }
 
+print_dsp :: proc(state: ^State) {
+  for row in state.dsp_lores {
+    arr := transmute([]u8)fmt.tprintf("%64b", row)
+    for _, i in arr {
+      if arr[i] == '1' do arr[i] = '#'
+      else do arr[i] = ' '
+    }
+    fmt.println(string(arr))
+  }
+}
+
 // Automatic profiling of every procedure:
 
 @(instrumentation_enter)
