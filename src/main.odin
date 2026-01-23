@@ -131,50 +131,28 @@ run :: proc() {
   rl.CloseWindow()
 }
 
-draw_display_lores_at :: proc(
-  display: ^[32]u64,
-  WIDTH: i32,
-  HEIGHT: i32,
-  scale: i32,
-  start_y: i32,
-  excl_end_y: i32,
-  start_x: i32,
-  excl_end_x: i32,
-) {
-  for y in start_y ..< excl_end_y {
-    yy := y % HEIGHT
-    row := display[yy]
-    for x in start_x ..< excl_end_x {
-      xx := x % WIDTH
-      xx_from_left := WIDTH - xx - 1
-      set := (row & (1 << u32(xx_from_left))) > 0
+draw_display_lores :: proc(display: ^[32]u64, WIDTH: i32, HEIGHT: i32, scale: i32) {
+  rl.ClearBackground(rl.BLACK)
+  for y in 0 ..< HEIGHT {
+    row := display[y]
+    for x in 0 ..< WIDTH {
+      x_from_left := WIDTH - x - 1
+      set := (row & (1 << u32(x_from_left))) > 0
 
-      if set do rl.DrawRectangle(xx * scale, yy * scale, scale, scale, rl.WHITE)
-      else do rl.DrawRectangle(xx * scale, yy * scale, scale, scale, rl.BLACK)
+      if set do rl.DrawRectangle(x * scale, y * scale, scale, scale, rl.WHITE)
     }
   }
 }
 
-draw_display_hires_at :: proc(
-  display: ^[64]u128,
-  WIDTH: i32,
-  HEIGHT: i32,
-  scale: i32,
-  start_y: i32,
-  end_y: i32,
-  start_x: i32,
-  end_x: i32,
-) {
-  for y in start_y ..< end_y {
-    yy := y % HEIGHT
-    row := display[yy]
-    for x in start_x ..< end_x {
-      xx := x % WIDTH
-      xx_from_left := WIDTH - xx - 1
-      set := (row & (1 << u32(xx_from_left))) > 0
+draw_display_hires :: proc(display: ^[64]u128, WIDTH: i32, HEIGHT: i32, scale: i32) {
+  rl.ClearBackground(rl.BLACK)
+  for y in 0 ..< HEIGHT {
+    row := display[y]
+    for x in 0 ..< WIDTH {
+      x_from_left := WIDTH - x - 1
+      set := (row & (1 << u32(x_from_left))) > 0
 
-      if set do rl.DrawRectangle(xx * scale, yy * scale, scale, scale, rl.WHITE)
-      else do rl.DrawRectangle(xx * scale, yy * scale, scale, scale, rl.BLACK)
+      if set do rl.DrawRectangle(x * scale, y * scale, scale, scale, rl.WHITE)
     }
   }
 }
@@ -691,16 +669,7 @@ DRW_lores :: proc(opcode: u16, state: ^State) {
     state.dsp_lores[row] ~= shifted_byte
   }
 
-  draw_display_lores_at(
-    &state.dsp_lores,
-    state.dsp_w,
-    state.dsp_h,
-    state.dsp_scale,
-    i32(start_y),
-    min(state.dsp_h - 1, i32(start_y + n)),
-    i32(start_x),
-    min(state.dsp_w - 1, i32(start_x + 8)),
-  )
+  draw_display_lores(&state.dsp_lores, state.dsp_w, state.dsp_h, state.dsp_scale)
 }
 
 DRW_hires :: proc(opcode: u16, state: ^State) {
@@ -732,16 +701,7 @@ DRW_hires :: proc(opcode: u16, state: ^State) {
     state.dsp_hires[row] ~= shifted_byte
   }
 
-  draw_display_hires_at(
-    &state.dsp_hires,
-    DSP_W,
-    DSP_H,
-    state.dsp_scale,
-    i32(start_y),
-    min(state.dsp_h - 1, i32(start_y + n)),
-    i32(start_x),
-    min(state.dsp_w - 1, i32(start_x + 8)),
-  )
+  draw_display_hires(&state.dsp_hires, DSP_W, DSP_H, state.dsp_scale)
 }
 
 // Automatic profiling of every procedure:
