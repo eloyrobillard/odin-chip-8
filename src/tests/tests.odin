@@ -341,7 +341,7 @@ test_draw_nbytes_at_xy_with_x_clipping :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_draw_nbytes_at_xy_with_y_wrapping :: proc(t: ^testing.T) {
+test_draw_nbytes_at_xy_with_y_clipping :: proc(t: ^testing.T) {
   state := main.State {
     dsp_w = 64,
     dsp_h = 32,
@@ -356,7 +356,7 @@ test_draw_nbytes_at_xy_with_y_wrapping :: proc(t: ^testing.T) {
   state.ram[4] = sprite_one[4]
 
   start_x: u8 = u8(state.dsp_w - 8)
-  start_y: u8 = u8(state.dsp_h - 3)
+  start_y: u8 = u8(state.dsp_h - 2)
   vx: u16 = 1
   vy: u16 = 2
   state.regs[vx] = start_x
@@ -370,10 +370,9 @@ test_draw_nbytes_at_xy_with_y_wrapping :: proc(t: ^testing.T) {
   state.regs[0xf] = 0
   main.execute_opcode(opcode, &state)
 
-  for i in 0 ..= 4 {
-    y := i32(start_y + u8(i)) % state.dsp_h
-    row := u8(state.dsp_lores[y])
-    testing.expect(t, row == sprite_one[i], fmt.tprintf("y: %d\tReceived: %2X\tExpected: %2X", y, row, sprite_one[i]))
+  for i in 0 ..= 1 {
+    row := u8(state.dsp_lores[i])
+    testing.expect(t, row == 0, fmt.tprintf("y: %d\tReceived: %2X\tExpected: %2X", i, row, sprite_one[i]))
   }
 }
 
