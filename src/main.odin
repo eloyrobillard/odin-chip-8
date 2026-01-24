@@ -112,6 +112,11 @@ run :: proc() {
       // NOTE: usually done inside EndDrawing
       rl.PollInputEvents()
     } else {
+      if state.dsp_mode == DSP_MODE.LORES {
+        draw_display_lores(&state.dsp_lores, state.dsp_w, state.dsp_h, state.dsp_scale)
+      } else {
+        draw_display_hires(&state.dsp_hires, state.dsp_w, state.dsp_h, state.dsp_scale)
+      }
       rl.EndDrawing()
     }
 
@@ -674,8 +679,6 @@ DRW_lores :: proc(opcode: u16, state: ^State) {
 
     state.dsp_lores[row_i] ~= shifted_byte
   }
-
-  draw_display_lores(&state.dsp_lores, DSP_W, DSP_H, state.dsp_scale)
 }
 
 DRW_hires :: proc(opcode: u16, state: ^State) {
@@ -706,8 +709,6 @@ DRW_hires :: proc(opcode: u16, state: ^State) {
 
     state.dsp_hires[row_i] ~= shifted_byte
   }
-
-  draw_display_hires(&state.dsp_hires, DSP_W, DSP_H, state.dsp_scale)
 }
 
 print_dsp :: proc(state: ^State) {
