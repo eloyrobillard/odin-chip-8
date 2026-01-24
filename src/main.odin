@@ -309,8 +309,6 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
         state.dsp_hires = [64]u128{}
       }
 
-      rl.ClearBackground(rl.BLACK)
-
     /* 00EE - RET
     サブルーチンから戻る。プログラムカウンタにスタックの一番上のアドレスをセットし、スタックポインタから1を引く。
     */
