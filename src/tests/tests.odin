@@ -301,7 +301,7 @@ test_draw_nbytes_at_xy_with_collision :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_draw_nbytes_at_xy_with_x_wrapping :: proc(t: ^testing.T) {
+test_draw_nbytes_at_xy_with_x_clipping :: proc(t: ^testing.T) {
   state := main.State {
     dsp_w = 64,
     dsp_h = 32,
@@ -332,7 +332,7 @@ test_draw_nbytes_at_xy_with_x_wrapping :: proc(t: ^testing.T) {
 
   testing.expect(
     t,
-    state.dsp_lores[start_y] >> 56 == 0xf8,
+    state.dsp_lores[start_y] == 0x07,
     fmt.tprintf(
       fmt.tprintf("Got %c%d%c\tExpected 0xF8 on the most significant byte", '%', state.dsp_w / 4, 'X'),
       state.dsp_lores[start_y],
