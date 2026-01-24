@@ -16,7 +16,7 @@ is_display_clear :: proc(dsp: ^[32]u64) -> bool {
 
 @(test)
 test_instructions_loading :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   // binaryはリトルエンディアンになっている
   binary := []u16{0x0102}
   start: u16 = 0x200
@@ -42,23 +42,15 @@ test_instructions_loading :: proc(t: ^testing.T) {
 */
 @(test)
 test_clear_screen :: proc(t: ^testing.T) {
-  state := main.State{}
-  assert(is_display_clear(&state.dsp) == true, "Display should be clear")
+  state := main.default_state()
+  assert(is_display_clear(&state.dsp_lores) == true, "Display should be clear")
 
-  state.dsp[0] = 1
-  testing.expect(
-    t,
-    is_display_clear(&state.dsp) == false,
-    "Display should be set",
-  )
+  state.dsp_lores[0] = 1
+  testing.expect(t, is_display_clear(&state.dsp_lores) == false, "Display should be set")
 
   main.execute_opcode(0x00e0, &state)
 
-  testing.expect(
-    t,
-    is_display_clear(&state.dsp) == true,
-    "Display should be clear",
-  )
+  testing.expect(t, is_display_clear(&state.dsp_lores) == true, "Display should be clear")
 }
 
 /* 1NNN - JUMP addr
@@ -67,7 +59,7 @@ test_clear_screen :: proc(t: ^testing.T) {
   */
 @(test)
 test_address_jump :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   addr: u16 = 0x0200
   opcode: u16 = 0x1000 | addr
 
@@ -85,7 +77,7 @@ test_address_jump :: proc(t: ^testing.T) {
   */
 @(test)
 test_call_addr :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   addr: u16 = 0x0200
   opcode: u16 = 0x2000 | addr
   pc := state.pc
@@ -106,7 +98,7 @@ test_call_addr :: proc(t: ^testing.T) {
   */
 @(test)
 test_cond_reg_byte :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   pc := state.pc
   reg: u16 = 0
   same_as_reg: u16 = 0
@@ -134,7 +126,7 @@ Vx != kkの場合、次の命令をスキップする。インタプリタはレ
 */
 @(test)
 test_ncond_reg_byte :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   pc := state.pc
   reg: u16 = 0
   same_as_reg: u16 = 0
@@ -162,7 +154,7 @@ Vx = Vyの場合、次の命令をスキップする。インタプリタはレ�
 */
 @(test)
 test_cond_reg_reg :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   pc := state.pc
   r1: u16 = 1
   r2: u16 = 2
@@ -194,7 +186,7 @@ Vxにkkをセットする。インタプリタはレジスタVxにkkの値をセ
 */
 @(test)
 test_load_reg_byte :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   reg: u16 = 0
   data: u16 = 0x8f
   opcode: u16 = 0x6000 | (reg << 8) | data
@@ -211,7 +203,7 @@ VxにVx + kkをセットする。インタプリタはレジスタVxにkkの値�
 */
 @(test)
 test_add_reg_byte :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   reg: u16 = 0
   data: u16 = 1
   opcode: u16 = 0x7000 | (reg << 8) | data
@@ -228,7 +220,7 @@ Iにnnnをセットする。
 */
 @(test)
 test_load_i_addr :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   data: u16 = 0x0333
   opcode := 0xa000 | data
 
@@ -402,23 +394,14 @@ test_draw_nbytes_at_xy_with_y_wrapping :: proc(t: ^testing.T) {
 
   for i in 0 ..= 4 {
     y := i32(start_y + u8(i)) % state.dsp_h
-    row := u8(state.dsp[y])
-    testing.expect(
-      t,
-      row == sprite_one[i],
-      fmt.tprintf(
-        "y: %d\tReceived: %2X\tExpected: %2X",
-        y,
-        row,
-        sprite_one[i],
-      ),
-    )
+    row := u8(state.dsp_lores[y])
+    testing.expect(t, row == sprite_one[i], fmt.tprintf("y: %d\tReceived: %2X\tExpected: %2X", y, row, sprite_one[i]))
   }
 }
 
 @(test)
 test_load_vx_vy :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   state.regs[4] = 7
   state.regs[6] = 9
 
@@ -437,7 +420,7 @@ test_load_vx_vy :: proc(t: ^testing.T) {
 
 @(test)
 test_or_vx_vy :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   state.regs[4] = 7
   state.regs[6] = 9
 
@@ -452,7 +435,7 @@ test_or_vx_vy :: proc(t: ^testing.T) {
 
 @(test)
 test_and_vx_vy :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   state.regs[4] = 7
   state.regs[6] = 9
 
@@ -467,7 +450,7 @@ test_and_vx_vy :: proc(t: ^testing.T) {
 
 @(test)
 test_xor_vx_vy :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   state.regs[4] = 7
   state.regs[6] = 9
 
@@ -482,7 +465,7 @@ test_xor_vx_vy :: proc(t: ^testing.T) {
 
 @(test)
 test_add_vx_vy :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
 
   vx: u16 = 4
   vy: u16 = 6
@@ -512,7 +495,7 @@ test_add_vx_vy :: proc(t: ^testing.T) {
 
 @(test)
 test_sub_vx_vy :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   vx: u16 = 4
   vy: u16 = 6
   opcode := 0x8005 | vx << 8 | vy << 4
@@ -531,21 +514,13 @@ test_sub_vx_vy :: proc(t: ^testing.T) {
 
   main.execute_opcode(opcode, &state)
 
-  testing.expect(
-    t,
-    state.regs[4] == 254,
-    "Vx should equal Vx - Vy with byte overflow",
-  )
-  testing.expect(
-    t,
-    state.regs[0xf] == 0,
-    "Flag should NOT be set when Vy >= Vx",
-  )
+  testing.expect(t, state.regs[4] == 254, "Vx should equal Vx - Vy with byte overflow")
+  testing.expect(t, state.regs[0xf] == 0, "Flag should NOT be set when Vy >= Vx")
 }
 
 @(test)
 test_shr_vx :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
 
   vx: u16 = 4
   vy: u16 = 4
@@ -569,7 +544,7 @@ test_shr_vx :: proc(t: ^testing.T) {
 
 @(test)
 test_subn_vx_vy :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
 
   vx: u16 = 4
   vy: u16 = 6
@@ -603,7 +578,7 @@ test_subn_vx_vy :: proc(t: ^testing.T) {
 
 @(test)
 test_shl_vx :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
 
   vx: u16 = 4
   vy: u16 = 4
@@ -627,7 +602,7 @@ test_shl_vx :: proc(t: ^testing.T) {
 
 @(test)
 test_return :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
 
   opcode: u16 = 0x00ee
 
@@ -643,7 +618,7 @@ test_return :: proc(t: ^testing.T) {
 // Fx55
 @(test)
 test_ld_I_vx :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   for i in 0 ..= 15 {
     assert(state.ram[state.I + u16(i)] == 0)
   }
@@ -665,7 +640,7 @@ test_ld_I_vx :: proc(t: ^testing.T) {
 //Fx1E
 @(test)
 test_set_I_to_I_plus_vx :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
 
   opcode: u16 = 0xF01e
   state.regs[0] = 8
@@ -678,7 +653,7 @@ test_set_I_to_I_plus_vx :: proc(t: ^testing.T) {
 // Fx33
 @(test)
 test_ld_bcd_from_vx :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   for i in 0 ..= 2 {
     assert(state.ram[state.I + u16(i)] == 0)
   }
@@ -704,7 +679,7 @@ test_ld_bcd_from_vx :: proc(t: ^testing.T) {
 // Fx65
 @(test)
 test_ld_vx_I :: proc(t: ^testing.T) {
-  state := main.State{}
+  state := main.default_state()
   for i in 0 ..= 15 {
     assert(state.regs[i] == 0)
   }
