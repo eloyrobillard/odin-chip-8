@@ -52,7 +52,7 @@ test_clear_screen :: proc(t: ^testing.T) {
 @(test)
 test_address_jump :: proc(t: ^testing.T) {
   state := main.default_state()
-  addr: u16 = 0x0200
+  addr: u16 = 0x0400
   opcode: u16 = 0x1000 | addr
 
   assert(state.pc != addr, "Program counter should not be equal to jump address at this point")
