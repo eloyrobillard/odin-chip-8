@@ -23,17 +23,9 @@ test_instructions_loading :: proc(t: ^testing.T) {
 
   main.load_instructions_in_ram(&binary, &state, start)
 
-  testing.expect(
-    t,
-    state.ram[0x200] == 2,
-    "Did not load second byte at first address",
-  )
+  testing.expect(t, state.ram[0x200] == 2, "Did not load second byte at first address")
 
-  testing.expect(
-    t,
-    state.ram[0x201] == 1,
-    "Did not load first byte at second address",
-  )
+  testing.expect(t, state.ram[0x201] == 1, "Did not load first byte at second address")
 }
 
 /* 00E0 - CLS
@@ -63,10 +55,7 @@ test_address_jump :: proc(t: ^testing.T) {
   addr: u16 = 0x0200
   opcode: u16 = 0x1000 | addr
 
-  assert(
-    state.pc != addr,
-    "Program counter should not be equal to jump address at this point",
-  )
+  assert(state.pc != addr, "Program counter should not be equal to jump address at this point")
   main.execute_opcode(opcode, &state)
 
   testing.expect(t, state.pc == addr, "Did not jump to address")
@@ -224,10 +213,7 @@ test_load_i_addr :: proc(t: ^testing.T) {
   data: u16 = 0x0333
   opcode := 0xa000 | data
 
-  assert(
-    state.I != data,
-    "I register should have a different value than the test data",
-  )
+  assert(state.I != data, "I register should have a different value than the test data")
   main.execute_opcode(opcode, &state)
 
   testing.expect(t, state.I == data, "I register should contain the test data")
@@ -271,10 +257,7 @@ test_draw_nbytes_at_xy :: proc(t: ^testing.T) {
   for i in 0 ..< n {
     testing.expect(
       t,
-      u8(
-        (state.dsp[start_y + u8(i)] & (0xff << x_from_left)) >> x_from_left,
-      ) ==
-      sprite_one[i],
+      u8((state.dsp_lores[start_y + u8(i)] & (0xff << x_from_left)) >> x_from_left) == sprite_one[i],
       "Display should contain sprite at X and Y",
     )
   }
@@ -308,7 +291,7 @@ test_draw_nbytes_at_xy_with_collision :: proc(t: ^testing.T) {
   x_from_left := u8(state.dsp_w) - start_x - 8
 
   // ディスプレイに予め衝突するデータを用意
-  state.dsp[start_y] = 0x20 << x_from_left
+  state.dsp_lores[start_y] = 0x20 << x_from_left
 
   state.I = 0
   state.regs[0xf] = 0
@@ -349,15 +332,10 @@ test_draw_nbytes_at_xy_with_x_wrapping :: proc(t: ^testing.T) {
 
   testing.expect(
     t,
-    state.dsp[start_y] >> 56 == 0xf8,
+    state.dsp_lores[start_y] >> 56 == 0xf8,
     fmt.tprintf(
-      fmt.tprintf(
-        "Got %c%d%c\tExpected 0xF8 on the most significant byte",
-        '%',
-        state.dsp_w / 4,
-        'X',
-      ),
-      state.dsp[start_y],
+      fmt.tprintf("Got %c%d%c\tExpected 0xF8 on the most significant byte", '%', state.dsp_w / 4, 'X'),
+      state.dsp_lores[start_y],
     ),
   )
 }
@@ -411,11 +389,7 @@ test_load_vx_vy :: proc(t: ^testing.T) {
 
   main.execute_opcode(opcode, &state)
 
-  testing.expect(
-    t,
-    state.regs[4] == state.regs[6] && state.regs[4] == 9,
-    "Vx should equal Vy",
-  )
+  testing.expect(t, state.regs[4] == state.regs[6] && state.regs[4] == 9, "Vx should equal Vy")
 }
 
 @(test)
@@ -477,11 +451,7 @@ test_add_vx_vy :: proc(t: ^testing.T) {
   assert(state.regs[0xf] == 0)
   main.execute_opcode(opcode, &state)
 
-  testing.expect(
-    t,
-    state.regs[4] == 127,
-    "Vx should equal Vx + Vy with byte overflow",
-  )
+  testing.expect(t, state.regs[4] == 127, "Vx should equal Vx + Vy with byte overflow")
   testing.expect(t, state.regs[0xf] == 1)
 
   state.regs[4] = 7
@@ -564,16 +534,8 @@ test_subn_vx_vy :: proc(t: ^testing.T) {
 
   main.execute_opcode(opcode, &state)
 
-  testing.expect(
-    t,
-    state.regs[4] == 254,
-    "Vx should equal Vy - Vx with byte overflow",
-  )
-  testing.expect(
-    t,
-    state.regs[0xf] == 0,
-    "Flag should NOT be set when Vx >= Vy",
-  )
+  testing.expect(t, state.regs[4] == 254, "Vx should equal Vy - Vx with byte overflow")
+  testing.expect(t, state.regs[0xf] == 0, "Flag should NOT be set when Vx >= Vy")
 }
 
 @(test)
