@@ -513,6 +513,9 @@ execute_opcode :: proc(opcode: u16, state: ^State) -> bool {
     state.regs[x] = u8(rand.int31_max(256)) & kk
 
   case 0xD:
+    // スプライト衝突ビットをリセットする
+    // でないと 0x8xyn の結果のままで、間違って衝突を報告する可能性がある
+    state.regs[0xf] = 0
     if state.dsp_mode == DSP_MODE.LORES do DRW_lores(opcode, state)
     else do DRW_hires(opcode, state)
 
