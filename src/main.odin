@@ -98,6 +98,7 @@ run :: proc() {
 
   start := time.tick_now()
 
+  rl.BeginDrawing()
   for !rl.WindowShouldClose() {
     fst_byte := u16(state.ram[state.pc])
     snd_byte := u16(state.ram[state.pc + 1])
@@ -107,7 +108,6 @@ run :: proc() {
 
     // HACK: fixes rendering issues that occurred after decoupling opcode execution from draw cycle.
     // Somehow, beginning draw every time we loop around fixed those.
-    rl.BeginDrawing()
     if fst_byte & 0xf0 != 0xd0 {
       // NOTE: usually done inside EndDrawing
       rl.PollInputEvents()
@@ -118,6 +118,7 @@ run :: proc() {
         draw_display_hires(&state.dsp_hires, state.dsp_w, state.dsp_h, state.dsp_scale)
       }
       rl.EndDrawing()
+      rl.BeginDrawing()
     }
 
     if !jumped do state.pc += 2
