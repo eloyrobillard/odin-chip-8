@@ -46,9 +46,21 @@ State :: struct {
   dsp_h:           i32,
   dsp_scale:       i32,
 }
+
 spall_ctx: spall.Context
 @(thread_local)
 spall_buffer: spall.Buffer
+
+default_state :: proc() -> State {
+  instrs_start_addr: u16 = 0x200
+  return State {
+    pc = instrs_start_addr,
+    dsp_mode = DSP_MODE.LORES,
+    dsp_w = DSP_WIDTH_LORES,
+    dsp_h = DSP_HEIGHT_LORES,
+    dsp_scale = DSP_SCALE_LORES,
+  }
+}
 
 main :: proc() {
   spall_ctx = spall.context_create("trace_test.spall")
@@ -76,16 +88,9 @@ run :: proc() {
   binary := transmute([]u16)(data)
 
   // オペコードを解読し、実行する
-  instrs_start_addr: u16 = 0x200
-  state := State {
-    pc        = instrs_start_addr,
-    dsp_mode  = DSP_MODE.LORES,
-    dsp_w     = DSP_WIDTH_LORES,
-    dsp_h     = DSP_HEIGHT_LORES,
-    dsp_scale = DSP_SCALE_LORES,
-  }
+  state := default_state()
 
-  num_instr := load_instructions_in_ram(&binary, &state, instrs_start_addr)
+  num_instr := load_instructions_in_ram(&binary, &state, state.pc)
 
   // ディスプレイを起動
   rl.InitWindow(state.dsp_w * state.dsp_scale, state.dsp_h * state.dsp_scale, "Chip 8 Test")
