@@ -98,6 +98,8 @@ run :: proc() {
 
   start := time.tick_now()
 
+  cycles := 0
+  cycles_per_frame := 100
   rl.BeginDrawing()
   for !rl.WindowShouldClose() {
     fst_byte := u16(state.ram[state.pc])
@@ -106,12 +108,12 @@ run :: proc() {
 
     jumped := execute_opcode(opcode, &state)
 
-    // HACK: fixes rendering issues that occurred after decoupling opcode execution from draw cycle.
-    // Somehow, beginning draw every time we loop around fixed those.
-    if fst_byte & 0xf0 != 0xd0 {
+    if cycles < cycles_per_frame {
+      cycles += 1
       // NOTE: usually done inside EndDrawing
       rl.PollInputEvents()
     } else {
+      cycles = 0
       if state.dsp_mode == DSP_MODE.LORES {
         draw_display_lores(&state.dsp_lores, state.dsp_w, state.dsp_h, state.dsp_scale)
       } else {
