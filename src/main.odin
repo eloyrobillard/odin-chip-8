@@ -2,7 +2,6 @@ package main
 
 import "base:runtime"
 import "core:fmt"
-import "core:math"
 import "core:math/rand"
 import "core:os"
 import "core:prof/spall"
